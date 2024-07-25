@@ -6,3 +6,41 @@ available in the app when your plugin is enabled.
 If your plugin does not need CSS, delete this file.
 
 */
+
+.vitepress-ribbon-icon-hide {
+	display: none;
+}
+
+.vitepress-debug-console {
+	--dialog-width: 75%;
+}
+
+.vitepress-debug-console .modal-content {
+	white-space: pre-line;
+	user-select: text;
+	overflow: auto;
+}
+
+.vite-press-publisher-folder-config {
+	display: flex;
+	gap: 8px;
+	padding: 0 12px 12px;
+}
+
+.vite-press-publisher-folder-config .switch-box {
+	display: flex;
+	align-items: center;
+}
+
+.setting-item-info__hide .setting-item-info {
+	display: none;
+}
+
+.setting-item-info__hide .setting-item-control {
+	justify-content: flex-start;
+}
+
+.setting-item-info__hide {
+	border-top: none;
+	padding-bottom: 0;
+}
