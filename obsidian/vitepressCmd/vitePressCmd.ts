@@ -9,7 +9,7 @@ import * as fs from "fs";
 import ObsidianPlugin from "../main";
 
 export class VitePressCmd {
-
+	kill = require('tree-kill');
 	startedVitepressHostAddress = ''
 	currentFolder = getAbsolutePath('')
 	devChildProcess: child_process.ChildProcessWithoutNullStreams | null = null
@@ -26,17 +26,24 @@ export class VitePressCmd {
 		this.consoleModal = new ConsoleModal(app)
 		this.plugin = plugin
 		this.app.workspace.on('quit', () => {
-			this.devChildProcess?.kill();
-			this.previewChildProcess?.kill();
+			if (this.devChildProcess?.pid) {
+				this.kill(this.devChildProcess.pid)
+			}
+			if (this.previewChildProcess?.pid) {
+				this.kill(this.previewChildProcess.pid)
+			}
 		});
 	}
 
 	preview() {
 		this.consoleModal.open();
-		this.previewChildProcess?.kill();
-		this.previewChildProcess = child_process.spawn(`./node_modules/.bin/vitepress`, ['preview'], {
+		if (this.previewChildProcess?.pid) {
+			this.kill(this.previewChildProcess.pid)
+		}
+		this.previewChildProcess = child_process.spawn(`npm`, ['run', 'docs:preview'], {
 			cwd: this.currentFolder,
-			env: {PATH: process.env.PATH + ':/usr/local/bin'}
+			env: {PATH: process.env.PATH + ':/usr/local/bin'},
+			shell: true
 		});
 		this.commonCommandOnRunning('[vitepress preview]', this.previewChildProcess, data => {
 			const address = this.extractAddress(data + '')
@@ -70,7 +77,8 @@ export class VitePressCmd {
 				env: {
 					...envsMap,
 					PATH: process.env.PATH + ':/usr/local/bin',
-				}
+				},
+				shell: true
 			});
 		this.commonCommandOnRunning('[vitepress publish]', childProcess)
 	}
@@ -78,9 +86,10 @@ export class VitePressCmd {
 	build() {
 		this.consoleModal.open();
 		this.docsPrepare();
-		const childProcess = child_process.spawn(`./node_modules/.bin/vitepress`, ['build'], {
+		const childProcess = child_process.spawn(`npm`, ['run', 'docs:build'], {
 			cwd: this.currentFolder,
-			env: {PATH: process.env.PATH + ':/usr/local/bin'}
+			env: {PATH: process.env.PATH + ':/usr/local/bin'},
+			shell: true
 		});
 		this.commonCommandOnRunning('[vitepress build]:', childProcess)
 	}
@@ -101,12 +110,16 @@ export class VitePressCmd {
 	}
 
 	closeDev() {
-		this.devChildProcess?.kill();
+		if (this.devChildProcess?.pid) {
+			this.kill(this.devChildProcess.pid)
+		}
 		this.updateState(false);
 	}
 
 	closePreview() {
-		this.previewChildProcess?.kill();
+		if (this.previewChildProcess?.pid) {
+			this.kill(this.previewChildProcess.pid)
+		}
 	}
 
 	openBrowser() {
@@ -145,7 +158,6 @@ export class VitePressCmd {
 		removeFolder(docsFolder)
 		copyFileSyncRecursive(getAbsolutePath('docs'), getAbsolutePath(docsFolder), true)
 		const folder = this.plugin.settings.publishedFolderList
-		console.log('folder', folder);
 		this.consoleModal.appendLogResult(`${actionName} copy folder '${folder}' to folder '${docsFolder}'`)
 		// @ts-ignore
 		const workspace = this.app.vault.adapter.basePath;
@@ -166,9 +178,10 @@ export class VitePressCmd {
 		// 暂时注释掉，默认第一次启动的时候为打开主页。 并且第一次启动的时候，将docs的内容复制到knowledge文件夹
 		// saveCurrentPreviewFilePath(this.app);
 		this.docsPrepare()
-		this.devChildProcess = child_process.spawn(`./node_modules/.bin/vitepress`, [], {
+		this.devChildProcess = child_process.spawn(`npm`, ['run', 'docs:dev'], {
 			cwd: this.currentFolder,
-			env: {PATH: process.env.PATH + ':/usr/local/bin'}
+			env: {PATH: process.env.PATH + ':/usr/local/bin'},
+			shell: true
 		});
 		this.devChildProcess.stdout.on('data', (data) => {
 			this.consoleModal.appendLogResult(data)

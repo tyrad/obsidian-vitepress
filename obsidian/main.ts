@@ -26,14 +26,6 @@ export default class ObsidianPlugin extends Plugin {
 		this.reloadRibbonIcon()
 
 		this.addCommand({
-			id: 'open-log-modal',
-			name: 'Show log',
-			callback: () => {
-				this.vitePressCmd.consoleModal.open();
-			}
-		});
-
-		this.addCommand({
 			id: 'vitepress-build',
 			name: 'vitepress build',
 			callback: () => {
@@ -62,6 +54,14 @@ export default class ObsidianPlugin extends Plugin {
 			name: 'vitepress publish',
 			callback: () => {
 				this.vitePressCmd.publish();
+			}
+		});
+
+		this.addCommand({
+			id: 'open-log-modal',
+			name: 'Show log',
+			callback: () => {
+				this.vitePressCmd.consoleModal.open();
 			}
 		});
 
