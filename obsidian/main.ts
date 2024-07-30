@@ -50,14 +50,6 @@ export default class ObsidianPlugin extends Plugin {
 		});
 
 		this.addCommand({
-			id: 'vitepress-build-preview',
-			name: 'vitepress build and preview',
-			callback: () => {
-				this.vitePressCmd.buildAndPreview();
-			}
-		});
-
-		this.addCommand({
 			id: 'vitepress-preview-close',
 			name: 'vitepress preview close',
 			callback: () => {

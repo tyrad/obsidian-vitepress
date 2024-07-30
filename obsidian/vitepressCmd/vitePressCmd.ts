@@ -46,11 +46,6 @@ export class VitePressCmd {
 		})
 	}
 
-	buildAndPreview() {
-		this.build()
-		this.preview()
-	}
-
 	publish() {
 		this.consoleModal.open();
 		// chmod别忘了
