@@ -25,6 +25,7 @@ If your plugin does not need CSS, delete this file.
 	display: flex;
 	gap: 8px;
 	padding: 0 12px 12px;
+	flex-wrap: wrap;
 }
 
 .vite-press-publisher-folder-config .switch-box {

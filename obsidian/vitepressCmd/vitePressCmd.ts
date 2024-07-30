@@ -228,9 +228,6 @@ export class VitePressCmd {
 	}
 
 	private updateState(running: boolean) {
-		if (this.isRunning === running) {
-			return
-		}
 		this.isRunning = running;
 		const ele = document.getElementsByClassName('obsidian-preview')[0]
 		if (running) {
