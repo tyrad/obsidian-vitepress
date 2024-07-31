@@ -43,7 +43,7 @@ export class VitePressCmd {
 		this.previewChildProcess = child_process.spawn(`npm`, ['run', 'docs:preview'], {
 			cwd: this.currentFolder,
 			env: {PATH: process.env.PATH + ':/usr/local/bin'},
-			shell: true
+			shell: process.platform === 'win32'
 		});
 		this.commonCommandOnRunning('[vitepress preview]', this.previewChildProcess, data => {
 			const address = this.extractAddress(data + '')
@@ -78,7 +78,7 @@ export class VitePressCmd {
 					...envsMap,
 					PATH: process.env.PATH + ':/usr/local/bin',
 				},
-				shell: true
+				shell: process.platform === 'win32'
 			});
 		this.commonCommandOnRunning('[vitepress publish]', childProcess)
 	}
@@ -89,7 +89,7 @@ export class VitePressCmd {
 		const childProcess = child_process.spawn(`npm`, ['run', 'docs:build'], {
 			cwd: this.currentFolder,
 			env: {PATH: process.env.PATH + ':/usr/local/bin'},
-			shell: true
+			shell: process.platform === 'win32'
 		});
 		this.commonCommandOnRunning('[vitepress build]:', childProcess)
 	}
@@ -181,7 +181,7 @@ export class VitePressCmd {
 		this.devChildProcess = child_process.spawn(`npm`, ['run', 'docs:dev'], {
 			cwd: this.currentFolder,
 			env: {PATH: process.env.PATH + ':/usr/local/bin'},
-			shell: true
+			shell: process.platform === 'win32'
 		});
 		this.devChildProcess.stdout.on('data', (data) => {
 			this.consoleModal.appendLogResult(data)
