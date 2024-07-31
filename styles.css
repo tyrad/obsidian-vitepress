@@ -45,3 +45,12 @@ If your plugin does not need CSS, delete this file.
 	border-top: none;
 	padding-bottom: 0;
 }
+
+.vitepress-setting-warning {
+	padding: 0 8px 12px;
+}
+
+.vitepress-setting-warning span {
+	color: #CB3030FF;
+	font-size: 0.9em;
+}

@@ -11,7 +11,6 @@ import ObsidianPlugin from "../main";
 export class VitePressCmd {
 	kill = require('tree-kill');
 	startedVitepressHostAddress = ''
-	currentFolder = getAbsolutePath('')
 	devChildProcess: child_process.ChildProcessWithoutNullStreams | null = null
 
 	private readonly app: App;
@@ -20,6 +19,10 @@ export class VitePressCmd {
 	private isRunning: undefined | boolean = undefined;
 
 	consoleModal: ConsoleModal;
+
+	getVitepressFolder() {
+		return this.plugin.settings.vitepressDir;
+	}
 
 	constructor(app: App, plugin: ObsidianPlugin) {
 		this.app = app;
@@ -41,7 +44,7 @@ export class VitePressCmd {
 			this.kill(this.previewChildProcess.pid)
 		}
 		this.previewChildProcess = child_process.spawn(`npm`, ['run', 'docs:preview'], {
-			cwd: this.currentFolder,
+			cwd: this.getVitepressFolder(),
 			env: {PATH: process.env.PATH + ':/usr/local/bin'},
 			shell: process.platform === 'win32'
 		});
@@ -55,8 +58,7 @@ export class VitePressCmd {
 
 	publish() {
 		this.consoleModal.open();
-		// chmod别忘了
-		this.consoleModal.appendLogResult(this.currentFolder);
+		this.consoleModal.appendLogResult(this.getVitepressFolder());
 		this.consoleModal.appendLogResult(process.env.PATH + ':/usr/local/bin');
 		const scriptPath = this.plugin.settings.deployScriptPath
 		if (!scriptPath) {
@@ -73,7 +75,7 @@ export class VitePressCmd {
 		this.consoleModal.appendLogResult('额外的环境变量:' + JSON.stringify(envsMap))
 		const childProcess = child_process.spawn(scriptPath,
 			[], {
-				cwd: this.currentFolder,
+				cwd: this.getVitepressFolder(),
 				env: {
 					...envsMap,
 					PATH: process.env.PATH + ':/usr/local/bin',
@@ -85,9 +87,11 @@ export class VitePressCmd {
 
 	build() {
 		this.consoleModal.open();
-		this.docsPrepare();
+		if (!this.docsPrepare()) {
+			return
+		}
 		const childProcess = child_process.spawn(`npm`, ['run', 'docs:build'], {
-			cwd: this.currentFolder,
+			cwd: this.getVitepressFolder(),
 			env: {PATH: process.env.PATH + ':/usr/local/bin'},
 			shell: process.platform === 'win32'
 		});
@@ -129,10 +133,9 @@ export class VitePressCmd {
 		const relativeFile = getCurrentMdFileRelativePath(this.app, false)
 		if (relativeFile) {
 			const fullFilePath = `${basePath}/${relativeFile}`
-			const copyTo = getAbsolutePath(`knowledge/${relativeFile}`);
+			const copyTo = `${this.plugin.settings.vitepressSrcDir}/${relativeFile}`;
 			try {
 				copyFileSyncRecursive(fullFilePath, copyTo)
-				// new Notice('文件拷贝成功'); // TODO   i18n
 			} catch (err) {
 				new Notice('文件拷贝失败' + err); // TODO    i18n
 			}
@@ -151,35 +154,76 @@ export class VitePressCmd {
 		child_process.spawn(`${openCommand}`, [encodeURI(url)]);
 	}
 
+	private checkSetting() {
+		// TODO: 判断路径是否存在
+		// this.plugin.settings.vitepressSrcDir knowledge
+		const vitepressSrcDir = this.plugin.settings.vitepressSrcDir;
+		const actionName = '[checkSetting]:'
+		if (!vitepressSrcDir) {
+			this.consoleModal.appendLogResult(`${actionName} 未设置vitepress的srcDir路径, 请先设置。`)
+			// TODO: 点击去设设置
+			new Notice('未设置vitepress的srcDir路径')
+			return false;
+		}
+		const vitepressStaicDir = this.plugin.settings.vitepressStaticDir;
+		if (!vitepressStaicDir) {
+			this.consoleModal.appendLogResult(`${actionName} 未设置vitepress的固定文件路径, 请先设置。`)
+			// TODO: 点击去设置
+			new Notice('未设置vitepress的固定文件路径')
+			return false;
+		}
+	}
+
 	private docsPrepare() {
-		const docsFolder = 'knowledge'
 		const actionName = '[docsPrepare]:'
-		this.consoleModal.appendLogResult(`${actionName} remove folder '${docsFolder}'`)
-		removeFolder(docsFolder)
-		copyFileSyncRecursive(getAbsolutePath('docs'), getAbsolutePath(docsFolder), true)
-		const folder = this.plugin.settings.publishedFolderList
-		this.consoleModal.appendLogResult(`${actionName} copy folder '${folder}' to folder '${docsFolder}'`)
+		const vitepressSrcDir = this.plugin.settings.vitepressSrcDir;
+		if (!vitepressSrcDir) {
+			this.consoleModal.appendLogResult(`${actionName} 未设置vitepress的srcDir路径, 请先设置。`)
+			new Notice('未设置vitepress的srcDir路径')
+			return false;
+		}
+		const vitepressStaicDir = this.plugin.settings.vitepressStaticDir;
+		if (!vitepressStaicDir) {
+			this.consoleModal.appendLogResult(`${actionName} 未设置vitepress的固定文件路径, 请先设置。`)
+			new Notice('未设置vitepress的固定文件路径')
+			return false;
+		}
+		this.consoleModal.appendLogResult(`${actionName} remove folder '${vitepressSrcDir}'`)
+		if (fs.existsSync(vitepressSrcDir)) {
+			removeFolder(vitepressSrcDir)
+		} else {
+			this.consoleModal.appendLogResult(`${actionName} '${vitepressSrcDir}' not exists`)
+		}
+		if (!fs.existsSync(vitepressStaicDir)) {
+			this.consoleModal.appendLogResult(`${actionName} '${vitepressStaicDir}' not exists, 停止后续操作。`)
+			return false;
+		}
+		copyFileSyncRecursive(vitepressStaicDir, vitepressSrcDir, true)
+		const folderOrFile = this.plugin.settings.publishedContentList
+		this.consoleModal.appendLogResult(`${actionName} copy '${folderOrFile.map(item => item.name)}' to folder '${vitepressSrcDir}'`)
 		// @ts-ignore
 		const workspace = this.app.vault.adapter.basePath;
-		for (const subFolder of folder) {
-			const srcPath = `${workspace}/${subFolder}`
+		for (const subContent of folderOrFile) {
+			const srcPath = `${workspace}/${subContent.name}`
 			if (fs.existsSync(srcPath)) {
-				copyFileSyncRecursive(`${workspace}/${subFolder}`, getAbsolutePath(`${docsFolder}/${subFolder}`), true, this.plugin.settings.ignoreFileRegex)
+				copyFileSyncRecursive(srcPath, `${vitepressSrcDir}/${subContent.name}`, subContent.isFolder, this.plugin.settings.ignoreFileRegex)
 			} else {
 				this.consoleModal.appendLogResult(`${actionName} '${srcPath}' not exists`, ConsoleType.Warning)
 			}
 		}
+		return true;
 	}
 
 	startPreview(): void {
 		this.consoleModal.open();
 		const actionName = '[vitepress]:'
 		this.consoleModal.appendLogResult(`${actionName} starting...`)
-		// 暂时注释掉，默认第一次启动的时候为打开主页。 并且第一次启动的时候，将docs的内容复制到knowledge文件夹
-		// saveCurrentPreviewFilePath(this.app);
-		this.docsPrepare()
+		// 默认第一次启动的时候为打开主页。 并且第一次启动的时候，将docs的内容复制到knowledge文件夹
+		if (!this.docsPrepare()) {
+			return
+		}
 		this.devChildProcess = child_process.spawn(`npm`, ['run', 'docs:dev'], {
-			cwd: this.currentFolder,
+			cwd: this.getVitepressFolder(),
 			env: {PATH: process.env.PATH + ':/usr/local/bin'},
 			shell: process.platform === 'win32'
 		});
@@ -225,6 +269,7 @@ export class VitePressCmd {
 	}
 
 	private extractAddress(text: string) {
+		debugger
 		if (!this.startedVitepressHostAddress && text) {
 			const regex = /http:\/\/(localhost|127.0.0.1):\d+/;
 			const matchResult = text.match(regex);

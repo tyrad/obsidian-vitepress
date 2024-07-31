@@ -52,7 +52,6 @@ export function copyFileSyncRecursive(src: string, dest: string, isCopyDir = fal
 	}
 }
 
-export function removeFolder(folder: string) {
-	const path = getAbsolutePath(folder)
+export function removeFolder(path: string) {
 	fs.rmSync(path, {recursive: true, force: true})
 }
