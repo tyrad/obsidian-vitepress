@@ -225,7 +225,8 @@ export class SettingTab extends PluginSettingTab {
 					})
 				}
 			}
-			this.plugin.settings.publishedContentList = selectedList;
+			this.plugin.settings.publishedContentList = this.plugin.settings.publishedContentList.filter(item => item.isFolder != isFolder);
+			this.plugin.settings.publishedContentList.push(...selectedList);
 			await this.plugin.saveData(this.plugin.settings);
 		});
 		checkbox.style.marginLeft = '4px';
