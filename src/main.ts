@@ -1,19 +1,19 @@
 import {App, setIcon, Plugin, addIcon, PluginManifest} from 'obsidian';
 import {DEFAULT_SETTINGS, MyPluginSettings, SettingTab} from "./setting/settingTab";
-import {VitePressCmd} from "./vitepressCmd/vitePressCmd";
+import {VitepressCommand} from "./command/vitepressCommand";
 import {ICON_NAME, ICON_SVG_CLOSE, ICON_SVG_PREVIEW} from "./static/icons";
 
 export default class ObsidianPlugin extends Plugin {
 
 	previewRibbonIconEl: HTMLElement | null = null
 
-	vitePressCmd: VitePressCmd
+	vitePressCmd: VitepressCommand
 	settingTab: SettingTab
 	settings: MyPluginSettings;
 
 	constructor(app: App, manifest: PluginManifest) {
 		super(app, manifest);
-		this.vitePressCmd = new VitePressCmd(app, this);
+		this.vitePressCmd = new VitepressCommand(app, this);
 		this.settingTab = new SettingTab(this.app, this)
 	}
 

@@ -8,7 +8,7 @@ import {ICON_SVG_CLOSE, ICON_SVG_PREVIEW} from "../static/icons";
 import * as fs from "fs";
 import ObsidianPlugin from "../main";
 
-export class VitePressCmd {
+export class VitepressCommand {
 	kill = require('tree-kill');
 	startedVitepressHostAddress = ''
 	devChildProcess: child_process.ChildProcessWithoutNullStreams | null = null
