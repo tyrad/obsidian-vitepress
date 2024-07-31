@@ -158,7 +158,7 @@ export class SettingTab extends PluginSettingTab {
 			});
 
 		this.appendWarningText(`执行预览或者编译时，执行如下操作:
-				<br>1.首先会清空srcDir目录<br>2.将配置的固定文件目录内容移动到srcDir目录(如果未配置固定文件目录将不执行此步骤)<br>3.将发布内容移动到srcDir目录`)
+				<br>1.首先会清空srcDir目录<br>2.将配置的固定文件目录内容移动到srcDir目录<br>3.将发布内容移动到srcDir目录`)
 	}
 
 	publishSetting() {
@@ -166,7 +166,7 @@ export class SettingTab extends PluginSettingTab {
 		new Setting(containerEl).setName("发布设置").setHeading();
 		new Setting(containerEl)
 			.setName("发布脚本")
-			.setDesc('请输入发布脚本的绝对路径或相对vitepress的路径')
+			.setDesc('请输入发布脚本的绝对路径或相对vitepress目录的路径')
 			.addText(text => text
 				.setPlaceholder('请输入发布脚本的路径,当前路径为插件路径')
 				.setValue(this.plugin.settings.deployScriptPath)

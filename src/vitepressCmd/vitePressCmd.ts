@@ -2,7 +2,7 @@ import * as child_process from 'child_process';
 import {App, Notice} from "obsidian";
 import {noticeError, noticeInfo} from "../utils/log";
 import {getCurrentMdFileRelativePath} from "../utils/markdownPathUtils";
-import {copyFileSyncRecursive, getAbsolutePath, removeFolder} from "../utils/pathUtils";
+import {copyFileSyncRecursive, removeFolder} from "../utils/pathUtils";
 import {ConsoleModal, ConsoleType} from "../modal/consoleModal";
 import {ICON_SVG_CLOSE, ICON_SVG_PREVIEW} from "../static/icons";
 import * as fs from "fs";
@@ -40,6 +40,9 @@ export class VitePressCmd {
 
 	preview() {
 		this.consoleModal.open();
+		if (!this.checkSetting()) {
+			return
+		}
 		if (this.previewChildProcess?.pid) {
 			this.kill(this.previewChildProcess.pid)
 		}
@@ -58,6 +61,9 @@ export class VitePressCmd {
 
 	publish() {
 		this.consoleModal.open();
+		if (!this.checkSetting()) {
+			return
+		}
 		this.consoleModal.appendLogResult(this.getVitepressFolder());
 		this.consoleModal.appendLogResult(process.env.PATH + ':/usr/local/bin');
 		const scriptPath = this.plugin.settings.deployScriptPath
@@ -87,6 +93,9 @@ export class VitePressCmd {
 
 	build() {
 		this.consoleModal.open();
+		if (!this.checkSetting()) {
+			return
+		}
 		if (!this.docsPrepare()) {
 			return
 		}
@@ -127,7 +136,9 @@ export class VitePressCmd {
 	}
 
 	openBrowser() {
-		new Notice(this.app.vault.configDir)
+		if (!this.checkSetting()) {
+			return
+		}
 		// @ts-ignore.
 		const basePath = this.app.vault.adapter.basePath;
 		const relativeFile = getCurrentMdFileRelativePath(this.app, false)
@@ -155,23 +166,31 @@ export class VitePressCmd {
 	}
 
 	private checkSetting() {
-		// TODO: 判断路径是否存在
-		// this.plugin.settings.vitepressSrcDir knowledge
-		const vitepressSrcDir = this.plugin.settings.vitepressSrcDir;
-		const actionName = '[checkSetting]:'
-		if (!vitepressSrcDir) {
-			this.consoleModal.appendLogResult(`${actionName} 未设置vitepress的srcDir路径, 请先设置。`)
-			// TODO: 点击去设设置
-			new Notice('未设置vitepress的srcDir路径')
-			return false;
+		const actionName = '[CheckSetting]:'
+		const checkMapping: { [key: string]: string } = {
+			'vitepressDir': 'vitepress',
+			'vitepressSrcDir': 'vitepress的srcDir',
+			'vitepressStaticDir': 'vitepress的固定文件',
 		}
-		const vitepressStaicDir = this.plugin.settings.vitepressStaticDir;
-		if (!vitepressStaicDir) {
-			this.consoleModal.appendLogResult(`${actionName} 未设置vitepress的固定文件路径, 请先设置。`)
-			// TODO: 点击去设置
-			new Notice('未设置vitepress的固定文件路径')
-			return false;
+		for (const key of Object.keys(checkMapping)) {
+			// @ts-ignore
+			const configPath = this.plugin.settings[key];
+			const configDesc = checkMapping[key];
+			if (!configPath) {
+				const notice = new Notice(`未设置${configDesc}路径,点击设置`, 3000)
+				this.consoleModal.appendLogResult(`${actionName} 未设置${configDesc}路, 请先设置。`)
+				notice.noticeEl.addEventListener('click', () => {
+					this.plugin.settingTab.display();
+				})
+				return false
+			}
+			if (!fs.existsSync(configPath)) {
+				new Notice(`${configDesc}文件不存在，请检查设置`, 3000)
+				this.consoleModal.appendLogResult(`${actionName} ${configDesc}文件不存在，请检查设置。`)
+				return false
+			}
 		}
+		return true
 	}
 
 	private docsPrepare() {
@@ -216,6 +235,9 @@ export class VitePressCmd {
 
 	startPreview(): void {
 		this.consoleModal.open();
+		if (!this.checkSetting()) {
+			return
+		}
 		const actionName = '[vitepress]:'
 		this.consoleModal.appendLogResult(`${actionName} starting...`)
 		// 默认第一次启动的时候为打开主页。 并且第一次启动的时候，将docs的内容复制到knowledge文件夹
@@ -232,6 +254,7 @@ export class VitePressCmd {
 			const address = this.extractAddress(data + '')
 			if (address) {
 				this.startedVitepressHostAddress = address;
+				this.openBrowserByUrl(this.startedVitepressHostAddress)
 			}
 			this.updateState(true)
 		});
@@ -269,7 +292,6 @@ export class VitePressCmd {
 	}
 
 	private extractAddress(text: string) {
-		debugger
 		if (!this.startedVitepressHostAddress && text) {
 			const regex = /http:\/\/(localhost|127.0.0.1):\d+/;
 			const matchResult = text.match(regex);
