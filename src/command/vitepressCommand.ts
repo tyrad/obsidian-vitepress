@@ -7,14 +7,18 @@ import {ConsoleModal, ConsoleType} from "../modal/consoleModal";
 import {ICON_SVG_CLOSE, ICON_SVG_PREVIEW} from "../static/icons";
 import * as fs from "fs";
 import ObsidianPlugin from "../main";
+import stripAnsi from 'strip-ansi';
+import open from 'open';
 
 export class VitepressCommand {
 	kill = require('tree-kill');
+
 	startedVitepressHostAddress = ''
 	devChildProcess: child_process.ChildProcessWithoutNullStreams | null = null
 
 	private readonly app: App;
 	private readonly plugin: ObsidianPlugin;
+	private readonly isWindowsPlatform = process.platform === 'win32'
 	private previewChildProcess: child_process.ChildProcessWithoutNullStreams | null = null
 	private isRunning: undefined | boolean = undefined;
 
@@ -49,7 +53,7 @@ export class VitepressCommand {
 		this.previewChildProcess = child_process.spawn(`npm`, ['run', 'docs:preview'], {
 			cwd: this.getVitepressFolder(),
 			env: {PATH: process.env.PATH + ':/usr/local/bin'},
-			shell: process.platform === 'win32'
+			shell: this.isWindowsPlatform
 		});
 		this.commonCommandOnRunning('[vitepress preview]', this.previewChildProcess, data => {
 			const address = this.extractAddress(data + '')
@@ -86,7 +90,7 @@ export class VitepressCommand {
 					...envsMap,
 					PATH: process.env.PATH + ':/usr/local/bin',
 				},
-				shell: process.platform === 'win32'
+				shell: this.isWindowsPlatform
 			});
 		this.commonCommandOnRunning('[vitepress publish]', childProcess)
 	}
@@ -102,7 +106,7 @@ export class VitepressCommand {
 		const childProcess = child_process.spawn(`npm`, ['run', 'docs:build'], {
 			cwd: this.getVitepressFolder(),
 			env: {PATH: process.env.PATH + ':/usr/local/bin'},
-			shell: process.platform === 'win32'
+			shell: this.isWindowsPlatform
 		});
 		this.commonCommandOnRunning('[vitepress build]:', childProcess)
 	}
@@ -159,10 +163,14 @@ export class VitepressCommand {
 		}
 	}
 
-	private openBrowserByUrl(url: string) {
-		const openCommand = process.platform === 'win32' ? 'start' : process.platform === 'darwin' ? 'open' : 'xdg-open';
+	private async openBrowserByUrl(url: string) {
 		new Notice(`open ${url}`)
-		child_process.spawn(`${openCommand}`, [encodeURI(url)]);
+		open(url)
+			.then(() => {
+			})
+			.catch((e: any) => {
+				console.error(`open ${url}`, e)
+			})
 	}
 
 	private checkSetting() {
@@ -250,11 +258,12 @@ export class VitepressCommand {
 		this.devChildProcess = child_process.spawn(`npm`, ['run', 'docs:dev'], {
 			cwd: this.getVitepressFolder(),
 			env: {PATH: process.env.PATH + ':/usr/local/bin'},
-			shell: process.platform === 'win32'
+			shell: this.isWindowsPlatform
 		});
 		this.devChildProcess.stdout.on('data', (data) => {
-			this.consoleModal.appendLogResult(data)
-			const address = this.extractAddress(data + '')
+			const text = this.stripAnsiText(data)
+			this.consoleModal.appendLogResult(text)
+			const address = this.extractAddress(text)
 			if (address) {
 				this.startedVitepressHostAddress = address;
 				this.openBrowserByUrl(this.startedVitepressHostAddress)
@@ -262,7 +271,7 @@ export class VitepressCommand {
 			this.updateState(true)
 		});
 		this.devChildProcess.stderr.on('data', (data) => {
-			this.consoleModal.appendLogResult(data, ConsoleType.Warning)
+			this.consoleModal.appendLogResult(this.stripAnsiText(data), ConsoleType.Warning)
 		});
 		this.devChildProcess.on('close', (code) => {
 			this.consoleModal.appendLogResult(`${actionName} closed ${code ?? ''}`)
@@ -276,13 +285,18 @@ export class VitepressCommand {
 		});
 	}
 
+	private stripAnsiText(text: string | Buffer) {
+		return stripAnsi(text.toString());
+	}
+
 	private commonCommandOnRunning(actionName: string, process: child_process.ChildProcessWithoutNullStreams, onDataCallback: ((data: string) => (void)) | null = null) {
 		process.stdout.on('data', (data) => {
-			this.consoleModal.appendLogResult(data)
-			onDataCallback && onDataCallback(data)
+			const text = this.stripAnsiText(data);
+			this.consoleModal.appendLogResult(text)
+			onDataCallback && onDataCallback(text)
 		});
-		process.stderr.on('data', (data) => {
-			this.consoleModal.appendLogResult(data, ConsoleType.Warning)
+		process.stderr.on('data', (data: Buffer) => {
+			this.consoleModal.appendLogResult(this.stripAnsiText(data), ConsoleType.Warning)
 		});
 		process.on('close', (code) => {
 			this.consoleModal.appendLogResult(`${actionName} closed ${code ?? ''}`)
