@@ -11,7 +11,6 @@ export interface MyPluginSettings {
 	vitepressSrcDir: string;
 	vitepressStaticDir: string;
 	deployScriptPath: string;
-	environmentVariables: { key: string, value: string }[];
 	ignoreFileRegex: string
 }
 
@@ -23,7 +22,6 @@ export const DEFAULT_SETTINGS: MyPluginSettings = {
 	vitepressStaticDir: '',
 	deployScriptPath: './publish.sh',
 	ignoreFileRegex: '^_',
-	environmentVariables: [{key: '', value: ''}]
 }
 
 export class SettingTab extends PluginSettingTab {
@@ -174,53 +172,6 @@ export class SettingTab extends PluginSettingTab {
 					this.plugin.settings.deployScriptPath = value;
 					await this.plugin.saveData(this.plugin.settings);
 				}));
-		new Setting(containerEl)
-			.setName("环境变量")
-			.setDesc('请输入脚本用到的环境变量，若没用到，请忽略')
-
-		const configList = this.plugin.settings.environmentVariables
-		if (configList.length === 0) {
-			this.plugin.settings.environmentVariables = [{key: '', value: ''}]
-		}
-		for (let i = 0; i < this.plugin.settings.environmentVariables.length; i++) {
-			const o = this.plugin.settings.environmentVariables[i];
-			new Setting(containerEl)
-				.addText(text => {
-					text.setPlaceholder('key')
-						.setValue(o.key)
-						.onChange(async value => {
-							o.key = value
-							await this.plugin.saveData(this.plugin.settings)
-						})
-				})
-				.addText(text => {
-					text.setPlaceholder("value")
-						.setValue(o.value)
-						.onChange(async value => {
-							o.value = value
-							await this.plugin.saveData(this.plugin.settings)
-						})
-				})
-				.setClass('setting-item-info__hide')
-				.addExtraButton(x => {
-					x.setTooltip("新增")
-						.setIcon('plus')
-						.onClick(async () => {
-							this.plugin.settings.environmentVariables.push({key: '', value: ''})
-							await this.plugin.saveData(this.plugin.settings)
-							this.display()
-						})
-				})
-				.addExtraButton(x =>
-					x.setTooltip("删除")
-						.setIcon('delete')
-						.onClick(async () => {
-							this.plugin.settings.environmentVariables.splice(i, 1)
-							await this.plugin.saveData(this.plugin.settings)
-							this.display()
-						})
-				)
-		}
 	}
 
 	private loadFolder(callback: ((list: { name: string, isDir: boolean }[]) => void)) {

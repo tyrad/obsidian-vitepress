@@ -75,24 +75,28 @@ export class VitepressCommand {
 			new Notice('未设置部署脚本的路径')
 			return
 		}
-		const envs = this.plugin.settings.environmentVariables || [];
-		const envsMap: { [key: string]: string } = {}
-		for (const ob of envs) {
-			if (ob.key) {
-				envsMap[ob.key] = ob.value
-			}
+		let command;
+		// TODO: logger
+		switch (process.platform) {
+			case 'win32':
+				command = `start cmd /k bash ${scriptPath}`;
+				break;
+			case 'darwin':
+				// refer to : https://segmentfault.com/q/1010000024473935
+				command = `osascript -e 'tell application "Terminal" to do script "cd ${this.getVitepressFolder()} && bash ${scriptPath}"' -e 'tell application "Terminal" to activate'`
+				break;
+			default:
+				this.consoleModal.appendLogResult('Unsupported operating system')
+				new Notice('Unsupported operating system')
+				return;
 		}
-		this.consoleModal.appendLogResult('额外的环境变量:' + JSON.stringify(envsMap))
-		const childProcess = child_process.spawn(scriptPath,
-			[], {
-				cwd: this.getVitepressFolder(),
-				env: {
-					...envsMap,
-					PATH: process.env.PATH + ':/usr/local/bin',
-				},
-				shell: this.isWindowsPlatform
-			});
-		this.commonCommandOnRunning('[vitepress publish]', childProcess)
+		this.consoleModal.appendLogResult('打开新的终端并执行脚本：' + command)
+		child_process.exec(command, (error, stdout, stderr) => {
+			if (error) {
+				console.error(`exec error: ${error}`);
+				return;
+			}
+		});
 	}
 
 	build() {

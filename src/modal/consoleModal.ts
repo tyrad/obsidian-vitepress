@@ -1,6 +1,4 @@
 import {App, Modal} from "obsidian";
-import * as buffer from "node:buffer";
-
 export enum ConsoleType {
 	Common,
 	Warning,
