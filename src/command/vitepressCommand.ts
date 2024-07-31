@@ -50,11 +50,7 @@ export class VitepressCommand {
 		if (this.previewChildProcess?.pid) {
 			this.kill(this.previewChildProcess.pid)
 		}
-		this.previewChildProcess = child_process.spawn(`npm`, ['run', 'docs:preview'], {
-			cwd: this.getVitepressFolder(),
-			env: {PATH: process.env.PATH + ':/usr/local/bin'},
-			shell: this.isWindowsPlatform
-		});
+		this.previewChildProcess = child_process.spawn(`npm`, ['run', 'docs:preview'], this.getSpawnOptions());
 		this.commonCommandOnRunning('[vitepress preview]', this.previewChildProcess, data => {
 			const address = this.extractAddress(data + '')
 			if (address) {
@@ -107,11 +103,7 @@ export class VitepressCommand {
 		if (!this.docsPrepare()) {
 			return
 		}
-		const childProcess = child_process.spawn(`npm`, ['run', 'docs:build'], {
-			cwd: this.getVitepressFolder(),
-			env: {PATH: process.env.PATH + ':/usr/local/bin'},
-			shell: this.isWindowsPlatform
-		});
+		const childProcess = child_process.spawn(`npm`, ['run', 'docs:build'], this.getSpawnOptions());
 		this.commonCommandOnRunning('[vitepress build]:', childProcess)
 	}
 
@@ -147,32 +139,37 @@ export class VitepressCommand {
 		if (!this.checkSetting()) {
 			return
 		}
-		// @ts-ignore.
-		const basePath = this.app.vault.adapter.basePath;
-		const relativeFile = getCurrentMdFileRelativePath(this.app, false)
-		if (relativeFile) {
-			const fullFilePath = `${basePath}/${relativeFile}`
-			const copyTo = `${this.plugin.settings.vitepressSrcDir}/${relativeFile}`;
-			try {
-				copyFileSyncRecursive(fullFilePath, copyTo)
-			} catch (err) {
-				new Notice('文件拷贝失败' + err); // TODO    i18n
+		const copyFileTask = () => {
+			// @ts-ignore.
+			const basePath = this.app.vault.adapter.basePath;
+			const relativeFile = getCurrentMdFileRelativePath(this.app, false)
+			if (relativeFile) {
+				const fullFilePath = `${basePath}/${relativeFile}`
+				const copyTo = `${this.plugin.settings.vitepressSrcDir}/${relativeFile}`;
+				try {
+					copyFileSyncRecursive(fullFilePath, copyTo)
+				} catch (err) {
+					new Notice('文件拷贝失败' + err); // TODO    i18n
+				}
 			}
 		}
 		if (this.isRunning) {
-			const path = this.startedVitepressHostAddress + '/' + getCurrentMdFileRelativePath(this.app);
-			this.openBrowserByUrl(path)
+			copyFileTask()
+			this.openBrowserByUrl(this.startedVitepressHostAddress + '/' + getCurrentMdFileRelativePath(this.app))
 		} else {
-			this.startPreview();
+			this.startPreview(() => {
+				copyFileTask()
+				this.openBrowserByUrl(this.startedVitepressHostAddress + '/' + getCurrentMdFileRelativePath(this.app))
+			});
 		}
 	}
 
-	private async openBrowserByUrl(url: string) {
+	private openBrowserByUrl(url: string) {
 		new Notice(`open ${url}`)
 		open(url)
 			.then(() => {
 			})
-			.catch((e: any) => {
+			.catch((e) => {
 				console.error(`open ${url}`, e)
 			})
 	}
@@ -248,7 +245,8 @@ export class VitepressCommand {
 		return true;
 	}
 
-	startPreview(): void {
+
+	startPreview(finish: (() => void) | null = null): void {
 		this.consoleModal.open();
 		if (!this.checkSetting()) {
 			return
@@ -259,18 +257,18 @@ export class VitepressCommand {
 		if (!this.docsPrepare()) {
 			return
 		}
-		this.devChildProcess = child_process.spawn(`npm`, ['run', 'docs:dev'], {
-			cwd: this.getVitepressFolder(),
-			env: {PATH: process.env.PATH + ':/usr/local/bin'},
-			shell: this.isWindowsPlatform
-		});
+		this.devChildProcess = child_process.spawn(`npm`, ['run', 'docs:dev'], this.getSpawnOptions());
 		this.devChildProcess.stdout.on('data', (data) => {
 			const text = this.stripAnsiText(data)
 			this.consoleModal.appendLogResult(text)
 			const address = this.extractAddress(text)
-			if (address) {
+			if (address && !this.startedVitepressHostAddress) {
 				this.startedVitepressHostAddress = address;
-				this.openBrowserByUrl(this.startedVitepressHostAddress)
+				if (!finish) {
+					this.openBrowserByUrl(this.startedVitepressHostAddress)
+				} else {
+					finish();
+				}
 			}
 			this.updateState(true)
 		});
@@ -332,6 +330,16 @@ export class VitepressCommand {
 			this.devChildProcess = null;
 			this.startedVitepressHostAddress = '';
 			ele && (ele.innerHTML = ICON_SVG_CLOSE);
+		}
+	}
+
+	private getSpawnOptions() {
+		return {
+			cwd: this.getVitepressFolder(),
+			env: {
+				PATH: this.isWindowsPlatform ? process.env.PATH : process.env.PATH + ':/usr/local/bin'
+			},
+			shell: this.isWindowsPlatform
 		}
 	}
 }
