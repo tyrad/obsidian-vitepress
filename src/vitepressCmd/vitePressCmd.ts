@@ -180,7 +180,10 @@ export class VitePressCmd {
 				const notice = new Notice(`未设置${configDesc}路径,点击设置`, 3000)
 				this.consoleModal.appendLogResult(`${actionName} 未设置${configDesc}路, 请先设置。`)
 				notice.noticeEl.addEventListener('click', () => {
-					this.plugin.settingTab.display();
+					// @ts-ignore
+					this.app.setting.open();
+					// @ts-ignore
+					this.app.setting.openTabById('vitepress-publisher');
 				})
 				return false
 			}
@@ -262,8 +265,8 @@ export class VitePressCmd {
 			this.consoleModal.appendLogResult(data, ConsoleType.Warning)
 		});
 		this.devChildProcess.on('close', (code) => {
-			this.consoleModal.appendLogResult(`${actionName} closed ${code}`)
-			noticeInfo(`${actionName} closed ${code}`)
+			this.consoleModal.appendLogResult(`${actionName} closed ${code ?? ''}`)
+			noticeInfo(`${actionName} closed ${code ?? ''}`)
 			this.updateState(false)
 		});
 		this.devChildProcess.on('error', (err) => {
@@ -282,8 +285,8 @@ export class VitePressCmd {
 			this.consoleModal.appendLogResult(data, ConsoleType.Warning)
 		});
 		process.on('close', (code) => {
-			this.consoleModal.appendLogResult(`${actionName} closed ${code}`)
-			noticeInfo(`${actionName} closed ${code}`)
+			this.consoleModal.appendLogResult(`${actionName} closed ${code ?? ''}`)
+			noticeInfo(`${actionName} closed ${code ?? ''}`)
 		});
 		process.on('error', (err) => {
 			noticeError(`${actionName} Failed to start child process: ` + err)
