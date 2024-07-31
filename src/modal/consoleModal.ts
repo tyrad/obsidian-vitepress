@@ -1,5 +1,4 @@
 import {App, Modal} from "obsidian";
-
 export enum ConsoleType {
 	Common,
 	Warning,
@@ -27,7 +26,7 @@ export class ConsoleModal extends Modal {
 	onClose() {
 	}
 
-	appendLogResult(text: string, type = ConsoleType.Common) {
+	appendLogResult(text: string | Buffer, type = ConsoleType.Common) {
 		const date = new Date();
 		const padL = (nr: number, len = 2, chr = `0`) => `${nr}`.padStart(2, chr);
 		const dateTime = `<span style="color: green;">[${padL(date.getHours())}:${padL(date.getMinutes())}:${padL(date.getSeconds())}]</span>: `

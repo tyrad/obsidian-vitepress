@@ -1,5 +1,0 @@
-# Algolia-Crawler-Verif: C0932E4C36C34AE4
-
-User-agent: *
-Allow: /
-Sitemap: https://mistj.com/sitemap.xml

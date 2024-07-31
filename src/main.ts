@@ -1,23 +1,33 @@
-import {App, setIcon, Plugin, addIcon, PluginManifest} from 'obsidian';
+import {App, setIcon, Plugin, addIcon, PluginManifest, moment} from 'obsidian';
 import {DEFAULT_SETTINGS, MyPluginSettings, SettingTab} from "./setting/settingTab";
-import {VitePressCmd} from "./vitepressCmd/vitePressCmd";
+import {VitepressCommand} from "./command/vitepressCommand";
 import {ICON_NAME, ICON_SVG_CLOSE, ICON_SVG_PREVIEW} from "./static/icons";
+import {resources, translationLanguage} from "./i18n/i18next";
+import i18next from "i18next";
 
 export default class ObsidianPlugin extends Plugin {
 
 	previewRibbonIconEl: HTMLElement | null = null
 
-	vitePressCmd: VitePressCmd
+	vitePressCmd: VitepressCommand
 	settingTab: SettingTab
 	settings: MyPluginSettings;
 
 	constructor(app: App, manifest: PluginManifest) {
 		super(app, manifest);
-		this.vitePressCmd = new VitePressCmd(app, this);
+		this.vitePressCmd = new VitepressCommand(app, this);
 		this.settingTab = new SettingTab(this.app, this)
 	}
 
 	async onload() {
+		console.log("moment.locale()", moment.locale())
+
+		await i18next.init({
+			lng: translationLanguage,
+			fallbackLng: "en",
+			resources: resources,
+			returnNull: false,
+		});
 
 		addIcon(ICON_NAME, ICON_SVG_CLOSE);
 
@@ -27,7 +37,7 @@ export default class ObsidianPlugin extends Plugin {
 
 		this.addCommand({
 			id: 'vitepress-build',
-			name: 'vitepress build',
+			name: 'vitepress build (npm run docs:build)',
 			callback: () => {
 				this.vitePressCmd.build();
 			}
@@ -35,7 +45,7 @@ export default class ObsidianPlugin extends Plugin {
 
 		this.addCommand({
 			id: 'vitepress-preview',
-			name: 'vitepress preview',
+			name: 'vitepress preview (npm run docs:preview)',
 			callback: () => {
 				this.vitePressCmd.preview();
 			}
@@ -102,7 +112,7 @@ export default class ObsidianPlugin extends Plugin {
 					}
 					const buttonIcon = createEl('a', {
 						cls: ['view-action', 'clickable-icon', buttonClass],
-						attr: {'aria-label-position': 'bottom', 'aria-label': '在vitepress中预览'},
+						attr: {'aria-label-position': 'bottom', 'aria-label': 'preview on vitepress'},
 					});
 					setIcon(buttonIcon, ICON_NAME);
 					viewAction.prepend(buttonIcon);
