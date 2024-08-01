@@ -2,7 +2,7 @@ import * as child_process from 'child_process';
 import {App, Notice} from "obsidian";
 import {noticeError, noticeInfo} from "../utils/log";
 import {getCurrentMdFileRelativePath} from "../utils/markdownPathUtils";
-import {copyFileSyncRecursive, removeFolder} from "../utils/pathUtils";
+import {copyFileSyncRecursive, deleteFilesInDirectorySync} from "../utils/pathUtils";
 import {ConsoleModal, ConsoleType} from "../modal/consoleModal";
 import {ICON_SVG_CLOSE, ICON_SVG_PREVIEW} from "../static/icons";
 import * as fs from "fs";
@@ -52,7 +52,7 @@ export class VitepressCommand {
 		}
 		this.previewChildProcess = child_process.spawn(`npm`, ['run', 'docs:preview'], this.getSpawnOptions());
 		this.commonCommandOnRunning('[vitepress preview]', this.previewChildProcess, data => {
-			const address = this.extractAddress(data + '')
+			const address = this.extractAddress(data + '', false)
 			if (address) {
 				this.openBrowserByUrl(address);
 			}
@@ -118,6 +118,7 @@ export class VitepressCommand {
 			}
 		} catch (e) {
 			console.error(e)
+			this.consoleModal.appendLogResult('error!' + e, ConsoleType.Error)
 			new Notice('error!' + e);
 		}
 	}
@@ -176,16 +177,17 @@ export class VitepressCommand {
 
 	private checkSetting() {
 		const actionName = '[CheckSetting]:'
-		const checkMapping: { [key: string]: string } = {
-			'vitepressDir': 'vitepress',
-			'vitepressSrcDir': 'vitepress的srcDir',
-			'vitepressStaticDir': 'vitepress的固定文件',
+		const checkMapping: { [key: string]: { desc: string, required: boolean } } = {
+			'vitepressDir': {desc: 'vitepress', required: true},
+			'vitepressSrcDir': {desc: 'vitepress的srcDir', required: false},
+			'vitepressStaticDir': {desc: 'vitepress的固定文件', required: false},
 		}
 		for (const key of Object.keys(checkMapping)) {
+			// 路径的配置值
 			// @ts-ignore
 			const configPath = this.plugin.settings[key];
-			const configDesc = checkMapping[key];
-			if (!configPath) {
+			const configDesc = checkMapping[key].desc;
+			if (!configPath && checkMapping[key].required) {
 				const notice = new Notice(`未设置${configDesc}路径,点击设置`, 3000)
 				this.consoleModal.appendLogResult(`${actionName} 未设置${configDesc}路, 请先设置。`)
 				notice.noticeEl.addEventListener('click', () => {
@@ -196,7 +198,7 @@ export class VitepressCommand {
 				})
 				return false
 			}
-			if (!fs.existsSync(configPath)) {
+			if (configPath && !fs.existsSync(configPath)) {
 				new Notice(`${configDesc}文件不存在，请检查设置`, 3000)
 				this.consoleModal.appendLogResult(`${actionName} ${configDesc}文件不存在，请检查设置。`)
 				return false
@@ -214,22 +216,25 @@ export class VitepressCommand {
 			return false;
 		}
 		const vitepressStaicDir = this.plugin.settings.vitepressStaticDir;
-		if (!vitepressStaicDir) {
-			this.consoleModal.appendLogResult(`${actionName} 未设置vitepress的固定文件路径, 请先设置。`)
-			new Notice('未设置vitepress的固定文件路径')
-			return false;
+		if (this.plugin.settings.needCleanDirFolder) {
+			this.consoleModal.appendLogResult(`${actionName} remove folder '${vitepressSrcDir}'`)
+			if (fs.existsSync(vitepressSrcDir)) {
+				deleteFilesInDirectorySync(vitepressSrcDir)
+			}
 		}
-		this.consoleModal.appendLogResult(`${actionName} remove folder '${vitepressSrcDir}'`)
-		if (fs.existsSync(vitepressSrcDir)) {
-			removeFolder(vitepressSrcDir)
-		} else {
-			this.consoleModal.appendLogResult(`${actionName} '${vitepressSrcDir}' not exists`)
+		if (vitepressStaicDir) {
+			if (!fs.existsSync(vitepressStaicDir)) {
+				this.consoleModal.appendLogResult(`${actionName} '${vitepressStaicDir}' not exists, 停止后续操作。`)
+				return false;
+			}
+			const files = fs.readdirSync(vitepressStaicDir);
+			files.forEach(file => {
+				const filePath = `${vitepressStaicDir}/${file}`;
+				const stats = fs.statSync(filePath);
+				copyFileSyncRecursive(filePath, `${vitepressSrcDir}/${file}`, stats.isDirectory())
+				console.log(`copyFileSyncRecursive: ${filePath} `);
+			});
 		}
-		if (!fs.existsSync(vitepressStaicDir)) {
-			this.consoleModal.appendLogResult(`${actionName} '${vitepressStaicDir}' not exists, 停止后续操作。`)
-			return false;
-		}
-		copyFileSyncRecursive(vitepressStaicDir, vitepressSrcDir, true)
 		const folderOrFile = this.plugin.settings.publishedContentList
 		this.consoleModal.appendLogResult(`${actionName} copy '${folderOrFile.map(item => item.name)}' to folder '${vitepressSrcDir}'`)
 		// @ts-ignore
@@ -310,8 +315,11 @@ export class VitepressCommand {
 		});
 	}
 
-	private extractAddress(text: string) {
-		if (!this.startedVitepressHostAddress && text) {
+	private extractAddress(text: string, isDev = true) {
+		if (isDev && this.startedVitepressHostAddress) {
+			return ''
+		}
+		if (text) {
 			const regex = /http:\/\/(localhost|127.0.0.1):\d+/;
 			const matchResult = text.match(regex);
 			if (matchResult) {

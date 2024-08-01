@@ -55,3 +55,17 @@ export function copyFileSyncRecursive(src: string, dest: string, isCopyDir = fal
 export function removeFolder(path: string) {
 	fs.rmSync(path, {recursive: true, force: true})
 }
+
+export function deleteFilesInDirectorySync(directory: string) {
+	const files = fs.readdirSync(directory);
+	files.forEach(file => {
+		const filePath = `${directory}/${file}`;
+		const stats = fs.statSync(filePath);
+		if (stats.isDirectory()) {
+			removeFolder(filePath)
+		} else {
+			fs.unlinkSync(filePath);
+		}
+		console.log(`${filePath} deleted`);
+	});
+}

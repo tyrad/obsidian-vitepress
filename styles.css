@@ -54,3 +54,12 @@ If your plugin does not need CSS, delete this file.
 	color: #CB3030FF;
 	font-size: 0.9em;
 }
+
+.obsidian-setting-sub {
+	margin-left: 50px;
+	white-space: pre;
+}
+
+.obsidian-setting-warningtext-misj {
+	white-space: pre;
+}

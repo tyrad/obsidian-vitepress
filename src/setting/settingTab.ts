@@ -7,6 +7,7 @@ type PublishedContentType = { isFolder: boolean, name: string }
 export interface MyPluginSettings {
 	publishedContentList: PublishedContentType[];
 	showRibbonIconButton: boolean;
+	needCleanDirFolder: boolean;
 	vitepressDir: string;
 	vitepressSrcDir: string;
 	vitepressStaticDir: string;
@@ -16,6 +17,7 @@ export interface MyPluginSettings {
 
 export const DEFAULT_SETTINGS: MyPluginSettings = {
 	publishedContentList: [],
+	needCleanDirFolder: false,
 	showRibbonIconButton: true,
 	vitepressDir: '',
 	vitepressSrcDir: '',
@@ -27,6 +29,7 @@ export const DEFAULT_SETTINGS: MyPluginSettings = {
 export class SettingTab extends PluginSettingTab {
 	plugin: ObsidianPlugin;
 	showExternalButton = true
+	showFolderAdvanceButton = true
 
 	constructor(app: App, plugin: ObsidianPlugin) {
 		super(app, plugin);
@@ -38,6 +41,7 @@ export class SettingTab extends PluginSettingTab {
 		containerEl.empty();
 		this.configBasicSetting();
 		this.publishSetting();
+		this.updateWarningText();
 	}
 
 	private configBasicSetting() {
@@ -100,7 +104,6 @@ export class SettingTab extends PluginSettingTab {
 			.addText(text => {
 				text.inputEl.style.flex = '1';
 				text.inputEl.style.maxWidth = '250px';
-				// TODO: 可以改成选择
 				return text
 					.setPlaceholder('')
 					.setValue(this.plugin.settings.vitepressDir)
@@ -125,38 +128,77 @@ export class SettingTab extends PluginSettingTab {
 					});
 			});
 
+
 		new Setting(containerEl)
-			.setName("vitepress的固定文件目录")
-			.setDesc('请填写绝对路径')
-			.addText(text => {
-				text.inputEl.style.flex = '1';
-				text.inputEl.style.maxWidth = '250px';
-				return text
-					.setPlaceholder('')
-					.setValue(this.plugin.settings.vitepressStaticDir)
-					.onChange(async (value) => {
-						this.plugin.settings.vitepressStaticDir = value;
-						await this.plugin.saveData(this.plugin.settings);
+			.setName('高级设置')
+			.addExtraButton((cb) => {
+				// 内置icon见： https://lucide.dev/icons/
+				cb.setIcon(!this.showFolderAdvanceButton ? "up-chevron-glyph" : 'down-chevron-glyph')
+					.onClick(() => {
+						this.showFolderAdvanceButton = !this.showFolderAdvanceButton;
+						this.display();
 					});
-			});
+			})
+		if (this.showFolderAdvanceButton) {
 
-		new Setting(containerEl)
-			.setName("过滤文件或目录")
-			.setDesc('过滤文件名满足该正则表达式的文件,如果不填，则不进行过滤')
-			.addText(text => {
-				text.inputEl.style.flex = '1';
-				text.inputEl.style.maxWidth = '250px';
-				return text
-					.setPlaceholder('请输入正则表达式')
-					.setValue(this.plugin.settings.ignoreFileRegex)
-					.onChange(async (value) => {
-						this.plugin.settings.ignoreFileRegex = value;
-						await this.plugin.saveData(this.plugin.settings);
-					})
-			});
+			new Setting(containerEl)
+				.setName("执行命令时,先清空srcDir目录")
+				.setDesc('vitepress执行预览或者编译时,是否先清空srcDir目录,再执行其他操作')
+				.addToggle((toggle) => {
+					toggle
+						.setValue(this.plugin.settings.needCleanDirFolder)
+						.onChange(async (needCleanDirFolder) => {
+							this.plugin.settings.needCleanDirFolder = needCleanDirFolder;
+							await this.plugin.saveData(this.plugin.settings);
+							this.plugin.reloadRibbonIcon();
+							this.updateWarningText();
+						});
+				})
+				.setClass('obsidian-setting-sub')
 
-		this.appendWarningText(`执行预览或者编译时，执行如下操作:
-				<br>1.首先会清空srcDir目录<br>2.将配置的固定文件目录内容移动到srcDir目录<br>3.将发布内容移动到srcDir目录`)
+			new Setting(containerEl)
+				.setName("vitepress的固定文件目录")
+				.setDesc('请填写绝对路径\n如果设置了,执行命令时,此目录的内容将复制到srcDir目录')
+				.addText(text => {
+					text.inputEl.style.flex = '1';
+					text.inputEl.style.maxWidth = '250px';
+					return text
+						.setPlaceholder('')
+						.setValue(this.plugin.settings.vitepressStaticDir)
+						.onChange(async (value) => {
+							this.plugin.settings.vitepressStaticDir = value;
+							await this.plugin.saveData(this.plugin.settings);
+							this.updateWarningText();
+						});
+				})
+				.setClass('obsidian-setting-sub')
+
+			new Setting(containerEl)
+				.setName("过滤obsidian文件或目录")
+				.setDesc('过滤文件名满足该正则表达式的文件,如果不填,则不进行过滤')
+				.addText(text => {
+					text.inputEl.style.flex = '1';
+					text.inputEl.style.maxWidth = '250px';
+					return text
+						.setPlaceholder('请输入正则表达式')
+						.setValue(this.plugin.settings.ignoreFileRegex)
+						.onChange(async (value) => {
+							this.plugin.settings.ignoreFileRegex = value;
+							await this.plugin.saveData(this.plugin.settings);
+							this.updateWarningText();
+						})
+				})
+				.setClass('obsidian-setting-sub');
+		}
+	}
+
+	updateWarningText() {
+		const ele = document.getElementsByClassName('obsidian-setting-warningtext-misj')[0]
+		if (ele) {
+			ele.remove()
+		}
+		this.appendWarningText(`根据当前配置，执行预览或者编译时，将执行如下操作:
+${this.plugin.settings.needCleanDirFolder ? '- 首先会清空srcDir目录\n' : ''}${this.plugin.settings.vitepressStaticDir ? '- 将配置的固定文件目录内的文件移动到srcDir目录\n' : ''}- 将发布内容移动到srcDir目录${this.plugin.settings.ignoreFileRegex ? `(过滤文件名满足正则表达式${this.plugin.settings.ignoreFileRegex}的文件)` : ''}`, ['obsidian-setting-warningtext-misj'])
 	}
 
 	publishSetting() {
@@ -195,9 +237,9 @@ export class SettingTab extends PluginSettingTab {
 		});
 	}
 
-	private appendWarningText(text: string) {
+	private appendWarningText(text: string, classList: string[]) {
 		const warning = createEl('div', {
-			cls: ['vitepress-setting-warning'],
+			cls: ['vitepress-setting-warning', ...classList],
 		});
 		warning.innerHTML = `<span>${text}</span>`
 		this.containerEl.append(warning)
