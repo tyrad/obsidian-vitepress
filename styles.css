@@ -63,3 +63,8 @@ If your plugin does not need CSS, delete this file.
 .obsidian-setting-warningtext-misj {
 	white-space: pre;
 }
+
+.obsidian-setting-required .setting-item-name::before {
+	content: " * ";
+	color: #CB3030FF;
+}

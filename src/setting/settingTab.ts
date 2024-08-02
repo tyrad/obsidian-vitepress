@@ -111,7 +111,8 @@ export class SettingTab extends PluginSettingTab {
 						this.plugin.settings.vitepressDir = value;
 						await this.plugin.saveData(this.plugin.settings);
 					});
-			});
+			})
+			.setClass('obsidian-setting-required');
 
 		new Setting(containerEl)
 			.setName("vitepress的srcDir路径")
@@ -126,7 +127,8 @@ export class SettingTab extends PluginSettingTab {
 						this.plugin.settings.vitepressSrcDir = value;
 						await this.plugin.saveData(this.plugin.settings);
 					});
-			});
+			})
+			.setClass('obsidian-setting-required');
 
 
 		new Setting(containerEl)
