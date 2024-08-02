@@ -1,7 +1,9 @@
-import {App, setIcon, Plugin, addIcon, PluginManifest} from 'obsidian';
+import {App, setIcon, Plugin, addIcon, PluginManifest, moment} from 'obsidian';
 import {DEFAULT_SETTINGS, MyPluginSettings, SettingTab} from "./setting/settingTab";
 import {VitepressCommand} from "./command/vitepressCommand";
 import {ICON_NAME, ICON_SVG_CLOSE, ICON_SVG_PREVIEW} from "./static/icons";
+import {resources, translationLanguage} from "./i18n/i18next";
+import i18next from "i18next";
 
 export default class ObsidianPlugin extends Plugin {
 
@@ -18,6 +20,14 @@ export default class ObsidianPlugin extends Plugin {
 	}
 
 	async onload() {
+		console.log("moment.locale()", moment.locale())
+
+		await i18next.init({
+			lng: translationLanguage,
+			fallbackLng: "en",
+			resources: resources,
+			returnNull: false,
+		});
 
 		addIcon(ICON_NAME, ICON_SVG_CLOSE);
 
@@ -102,7 +112,7 @@ export default class ObsidianPlugin extends Plugin {
 					}
 					const buttonIcon = createEl('a', {
 						cls: ['view-action', 'clickable-icon', buttonClass],
-						attr: {'aria-label-position': 'bottom', 'aria-label': '在vitepress中预览'},
+						attr: {'aria-label-position': 'bottom', 'aria-label': 'preview on vitepress'},
 					});
 					setIcon(buttonIcon, ICON_NAME);
 					viewAction.prepend(buttonIcon);

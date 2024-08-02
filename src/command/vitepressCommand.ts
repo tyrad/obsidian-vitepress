@@ -7,7 +7,6 @@ import {ConsoleModal, ConsoleType} from "../modal/consoleModal";
 import {ICON_SVG_CLOSE, ICON_SVG_PREVIEW} from "../static/icons";
 import * as fs from "fs";
 import ObsidianPlugin from "../main";
-import stripAnsi from 'strip-ansi';
 import open from 'open';
 
 export class VitepressCommand {
@@ -64,15 +63,13 @@ export class VitepressCommand {
 		if (!this.checkSetting()) {
 			return
 		}
-		this.consoleModal.appendLogResult(this.getVitepressFolder());
-		this.consoleModal.appendLogResult(process.env.PATH + ':/usr/local/bin');
 		const scriptPath = this.plugin.settings.deployScriptPath
 		if (!scriptPath) {
 			new Notice('未设置部署脚本的路径')
 			return
 		}
+		this.consoleModal.appendLogResult(this.getVitepressFolder());
 		let command;
-		// TODO: logger
 		switch (process.platform) {
 			case 'win32':
 				command = `start cmd /k bash ${scriptPath}`;
@@ -264,9 +261,8 @@ export class VitepressCommand {
 		}
 		this.devChildProcess = child_process.spawn(`npm`, ['run', 'docs:dev'], this.getSpawnOptions());
 		this.devChildProcess.stdout.on('data', (data) => {
-			const text = this.stripAnsiText(data)
-			this.consoleModal.appendLogResult(text)
-			const address = this.extractAddress(text)
+			this.consoleModal.appendLogResult(data)
+			const address = this.extractAddress(data)
 			if (address && !this.startedVitepressHostAddress) {
 				this.startedVitepressHostAddress = address;
 				if (!finish) {
@@ -278,7 +274,7 @@ export class VitepressCommand {
 			this.updateState(true)
 		});
 		this.devChildProcess.stderr.on('data', (data) => {
-			this.consoleModal.appendLogResult(this.stripAnsiText(data), ConsoleType.Warning)
+			this.consoleModal.appendLogResult(data, ConsoleType.Warning)
 		});
 		this.devChildProcess.on('close', (code) => {
 			this.consoleModal.appendLogResult(`${actionName} closed ${code ?? ''}`)
@@ -292,18 +288,13 @@ export class VitepressCommand {
 		});
 	}
 
-	private stripAnsiText(text: string | Buffer) {
-		return stripAnsi(text.toString());
-	}
-
 	private commonCommandOnRunning(actionName: string, process: child_process.ChildProcessWithoutNullStreams, onDataCallback: ((data: string) => (void)) | null = null) {
 		process.stdout.on('data', (data) => {
-			const text = this.stripAnsiText(data);
-			this.consoleModal.appendLogResult(text)
-			onDataCallback && onDataCallback(text)
+			this.consoleModal.appendLogResult(data)
+			onDataCallback && onDataCallback(data.toString())
 		});
 		process.stderr.on('data', (data: Buffer) => {
-			this.consoleModal.appendLogResult(this.stripAnsiText(data), ConsoleType.Warning)
+			this.consoleModal.appendLogResult(data, ConsoleType.Warning)
 		});
 		process.on('close', (code) => {
 			this.consoleModal.appendLogResult(`${actionName} closed ${code ?? ''}`)
