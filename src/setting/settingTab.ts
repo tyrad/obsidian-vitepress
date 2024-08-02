@@ -45,26 +45,6 @@ export class SettingTab extends PluginSettingTab {
 		this.updateWarningText();
 	}
 
-	// 基本设置
-	// 是否展示左侧栏按钮
-	// 是否展示左侧栏Ribbon Icon按钮
-	// 发布内容
-	// 在当前obsidian文档中，选择需要复制到vitepress目录的一级目录或文件
-	// vitepress的srcDir路径
-	// 请填写绝对路径
-	// 高级设置
-	// 执行命令时,先清空srcDir目录
-	// vitepress执行预览或者编译时,是否先清空srcDir目录,再执行其他操作
-	// vitepress的固定文件目录
-	// 请填写绝对路径\n如果设置了,执行命令时,此目录的内容将复制到srcDir目录
-// 过滤obsidian文件或目录
-// 过滤文件名满足该正则表达式的文件,如果不填,则不进行过滤
-	// 根据当前配置，执行预览或者编译时，将执行如下操作:
-	// 首先会清空srcDir目录
-	// 将配置的固定文件目录内的文件移动到srcDir目录
-	// 过滤文件名满足正则表达式的文件
-	// 请输入发布脚本的路径,当前路径为插件路径
-
 	private configBasicSetting() {
 		const {containerEl} = this;
 		new Setting(this.containerEl).setName(i18next.t('基本设置')).setHeading();

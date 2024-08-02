@@ -51,7 +51,7 @@ export class VitepressCommand {
 		}
 		this.previewChildProcess = child_process.spawn(`npm`, ['run', 'docs:preview'], this.getSpawnOptions());
 		this.commonCommandOnRunning('[vitepress preview]', this.previewChildProcess, data => {
-			const address = this.extractAddress(data + '', false)
+			const address = this.extractAddress(data.toString(), false)
 			if (address) {
 				this.openBrowserByUrl(address);
 			}
@@ -83,7 +83,7 @@ export class VitepressCommand {
 				new Notice('Unsupported operating system')
 				return;
 		}
-		this.consoleModal.appendLogResult('打开新的终端并执行脚本：' + command)
+		this.consoleModal.appendLogResult('run script on new terminal：' + command)
 		child_process.exec(command, (error, stdout, stderr) => {
 			if (error) {
 				console.error(`exec error: ${error}`);
@@ -262,7 +262,7 @@ export class VitepressCommand {
 		this.devChildProcess = child_process.spawn(`npm`, ['run', 'docs:dev'], this.getSpawnOptions());
 		this.devChildProcess.stdout.on('data', (data) => {
 			this.consoleModal.appendLogResult(data)
-			const address = this.extractAddress(data)
+			const address = this.extractAddress(data.toString())
 			if (address && !this.startedVitepressHostAddress) {
 				this.startedVitepressHostAddress = address;
 				if (!finish) {
