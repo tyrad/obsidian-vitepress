@@ -23,5 +23,6 @@
 	"将配置的固定文件目录内的文件移动到srcDir目录\n": "Move files from the configured fixed directory to the srcDir directory\n",
 	"过滤文件名满足正则表达式的文件": "Filter files that match the regular expression ({{regex}}) in the file name",
 	"请输入发布脚本的路径,当前路径为插件路径": "Please enter the path to the publishing script, the current path is the plugin path",
-	"将发布内容移动到srcDir目录": "Move the published content to the srcDir directory"
+	"将发布内容移动到srcDir目录": "Move the published content to the srcDir directory",
+	"请输入正则表达式": "Please enter a regular expression"
 }

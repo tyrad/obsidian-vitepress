@@ -23,7 +23,7 @@ export const DEFAULT_SETTINGS: MyPluginSettings = {
 	vitepressDir: '',
 	vitepressSrcDir: '',
 	vitepressStaticDir: '',
-	deployScriptPath: './publish.sh',
+	deployScriptPath: '',
 	ignoreFileRegex: '^_',
 }
 
@@ -183,7 +183,7 @@ export class SettingTab extends PluginSettingTab {
 					text.inputEl.style.flex = '1';
 					text.inputEl.style.maxWidth = '250px';
 					return text
-						.setPlaceholder('请输入正则表达式')
+						.setPlaceholder(i18next.t('请输入正则表达式'))
 						.setValue(this.plugin.settings.ignoreFileRegex)
 						.onChange(async (value) => {
 							this.plugin.settings.ignoreFileRegex = value;
@@ -203,7 +203,7 @@ export class SettingTab extends PluginSettingTab {
 		// TODO: ... zhe
 		const tip = i18next.t('根据当前配置，执行预览或者编译时，将执行如下操作')
 		this.appendWarningText(`${tip}:
-${this.plugin.settings.needCleanDirFolder ? `- ${i18next.t('首先会清空srcDir目录\n')}` : ''}${this.plugin.settings.vitepressStaticDir ? `- ${i18next.t('将配置的固定文件目录内的文件移动到srcDir目录\n')}` : ''}- ${i18next.t('将发布内容移动到srcDir目录')}${this.plugin.settings.ignoreFileRegex ? `(${i18next.t('过滤文件名满足正则表达式的文件', {regex:`${this.plugin.settings.ignoreFileRegex}`})})` : ''}`, ['obsidian-setting-warningtext-misj'])
+${this.plugin.settings.needCleanDirFolder ? `- ${i18next.t('首先会清空srcDir目录\n')}` : ''}${this.plugin.settings.vitepressStaticDir ? `- ${i18next.t('将配置的固定文件目录内的文件移动到srcDir目录\n')}` : ''}- ${i18next.t('将发布内容移动到srcDir目录')}${this.plugin.settings.ignoreFileRegex ? `(${i18next.t('过滤文件名满足正则表达式的文件', {regex: `${this.plugin.settings.ignoreFileRegex}`})})` : ''}`, ['obsidian-setting-warningtext-misj'])
 	}
 
 	publishSetting() {
