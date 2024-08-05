@@ -153,7 +153,6 @@ export class SettingTab extends PluginSettingTab {
 						.onChange(async (needCleanDirFolder) => {
 							this.plugin.settings.needCleanDirFolder = needCleanDirFolder;
 							await this.plugin.saveData(this.plugin.settings);
-							this.plugin.reloadRibbonIcon();
 							this.updateWarningText();
 						});
 				})
@@ -200,7 +199,6 @@ export class SettingTab extends PluginSettingTab {
 		if (ele) {
 			ele.remove()
 		}
-		// TODO: ... zhe
 		const tip = i18next.t('根据当前配置，执行预览或者编译时，将执行如下操作')
 		this.appendWarningText(`${tip}:
 ${this.plugin.settings.needCleanDirFolder ? `- ${i18next.t('首先会清空srcDir目录\n')}` : ''}${this.plugin.settings.vitepressStaticDir ? `- ${i18next.t('将配置的固定文件目录内的文件移动到srcDir目录\n')}` : ''}- ${i18next.t('将发布内容移动到srcDir目录')}${this.plugin.settings.ignoreFileRegex ? `(${i18next.t('过滤文件名满足正则表达式的文件', {regex: `${this.plugin.settings.ignoreFileRegex}`})})` : ''}`, ['obsidian-setting-warningtext-misj'])
