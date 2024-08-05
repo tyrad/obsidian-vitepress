@@ -6,7 +6,7 @@
 
 ### 手动安装
 
-从 [release](https://github.com/tyrad/obsidian-vitepress-plugin/releases) 页面下载 `main.js`, `manifest.json`, `styles.css` ，并将其放到 `<vault>/.obsidian/plugins/obsidian-vitepress-plugin` 目录下。
+从 [release](https://github.com/tyrad/obsidian-vitepress/releases) 页面下载 `main.js`, `manifest.json`, `styles.css` ，并将其放到 `<vault>/.obsidian/plugins/obsidian-vitepress` 目录下。
 
 ## 如何配置
 
