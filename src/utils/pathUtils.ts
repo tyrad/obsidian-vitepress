@@ -35,7 +35,7 @@ export function copyFileSyncRecursive(src: string, dest: string, isCopyDir = fal
 		}
 	} else {
 		if (mathPrefix(src, regexText)) {
-			console.log('忽略拷贝，' + src)
+			//console.log('忽略拷贝，' + src)
 			return
 		}
 		if (isCopyDir) {

@@ -20,8 +20,6 @@ export default class ObsidianPlugin extends Plugin {
 	}
 
 	async onload() {
-		console.log("moment.locale()", moment.locale())
-
 		await i18next.init({
 			lng: translationLanguage,
 			fallbackLng: "en",
