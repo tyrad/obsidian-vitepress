@@ -3,9 +3,8 @@
 	"name": "Vitepress Publisher",
 	"version": "1.0.0",
 	"minAppVersion": "0.15.0",
-	"description": "This is an obsidian plugin for more convenient preview and publishing of .md files using vitepress",
+	"description": "This is an plugin for more convenient preview and publishing of .md files using vitepress",
 	"author": "mistj",
-	"authorUrl": "https://github.com/tyrad/obsidian-vitepress",
-	"fundingUrl": "https://obsidian.md/pricing",
+	"authorUrl": "https://mistj.com",
 	"isDesktopOnly": true
 }
