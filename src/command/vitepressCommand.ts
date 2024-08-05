@@ -8,6 +8,7 @@ import {ICON_SVG_CLOSE, ICON_SVG_PREVIEW} from "../static/icons";
 import * as fs from "fs";
 import ObsidianPlugin from "../main";
 import open from 'open';
+import stripAnsi from 'strip-ansi';
 
 export class VitepressCommand {
 	kill = require('tree-kill');
@@ -147,7 +148,7 @@ export class VitepressCommand {
 				try {
 					copyFileSyncRecursive(fullFilePath, copyTo)
 				} catch (err) {
-					new Notice('文件拷贝失败' + err); // TODO    i18n
+					new Notice('文件拷贝失败' + err);
 				}
 			}
 		}
@@ -261,6 +262,7 @@ export class VitepressCommand {
 		}
 		this.devChildProcess = child_process.spawn(`npm`, ['run', 'docs:dev'], this.getSpawnOptions());
 		this.devChildProcess.stdout.on('data', (data) => {
+			data = this.stripAnsiText(data)
 			this.consoleModal.appendLogResult(data)
 			const address = this.extractAddress(data.toString())
 			if (address && !this.startedVitepressHostAddress) {
@@ -274,6 +276,7 @@ export class VitepressCommand {
 			this.updateState(true)
 		});
 		this.devChildProcess.stderr.on('data', (data) => {
+			data = this.stripAnsiText(data)
 			this.consoleModal.appendLogResult(data, ConsoleType.Warning)
 		});
 		this.devChildProcess.on('close', (code) => {
@@ -290,11 +293,12 @@ export class VitepressCommand {
 
 	private commonCommandOnRunning(actionName: string, process: child_process.ChildProcessWithoutNullStreams, onDataCallback: ((data: string) => (void)) | null = null) {
 		process.stdout.on('data', (data) => {
+			data = this.stripAnsiText(data)
 			this.consoleModal.appendLogResult(data)
 			onDataCallback && onDataCallback(data.toString())
 		});
 		process.stderr.on('data', (data: Buffer) => {
-			this.consoleModal.appendLogResult(data, ConsoleType.Warning)
+			this.consoleModal.appendLogResult(this.stripAnsiText(data), ConsoleType.Warning)
 		});
 		process.on('close', (code) => {
 			this.consoleModal.appendLogResult(`${actionName} closed ${code ?? ''}`)
@@ -318,6 +322,10 @@ export class VitepressCommand {
 			}
 		}
 		return ''
+	}
+
+	private stripAnsiText(text: string | Buffer) {
+		return stripAnsi(text.toString());
 	}
 
 	private updateState(running: boolean) {
