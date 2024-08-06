@@ -19,7 +19,7 @@ export function getAbsolutePath(fileName: string): string {
 function mathPrefix(path: string, regexText: string) {
 	const name = path.split(sep).pop();
 	if (name) {
-		return new RegExp('^_').test(name)
+		return new RegExp(regexText).test(name)
 	}
 	return false;
 }
