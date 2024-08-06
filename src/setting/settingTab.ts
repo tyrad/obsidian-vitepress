@@ -208,7 +208,7 @@ ${this.plugin.settings.needCleanDirFolder ? `- ${i18next.t('首先会清空srcDi
 			}
 			const folderList: { name: string, isDir: boolean }[] = []
 			files.forEach(file => {
-				if (file.name != '.DS_Store') {
+				if (file.name != '.DS_Store' && file.name != this.app.vault.configDir) {
 					folderList.push({
 						name: file.name,
 						isDir: file.isDirectory()
