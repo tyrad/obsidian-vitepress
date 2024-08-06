@@ -1,4 +1,5 @@
 import {App, Modal} from "obsidian";
+
 export enum ConsoleType {
 	Common,
 	Warning,
@@ -9,17 +10,24 @@ export class ConsoleModal extends Modal {
 	logContent = ''
 	readonly CONSOLE_MODAL_CLASS = 'vitepress-debug-console'
 	readonly CONSOLE_MODAL_EMPTY_TEXT = 'No logs available.';
+	readonly logDiv: HTMLElement
+	readonly otherDiv: HTMLElement
 
 	constructor(app: App) {
 		super(app);
 		this.setTitle("vitepress log console")
 		this.modalEl.addClass(this.CONSOLE_MODAL_CLASS)
+		this.logDiv = this.contentEl.createDiv();
+		this.otherDiv = this.contentEl.createDiv();
 	}
 
 	onOpen() {
 		const {contentEl} = this;
-		if (!this.logContent) {
-			contentEl.innerHTML = this.CONSOLE_MODAL_EMPTY_TEXT
+		if (this.logDiv.childNodes.length === 0) {
+			contentEl.createSpan({title: this.CONSOLE_MODAL_EMPTY_TEXT})
+		} else {
+			this.otherDiv.empty();
+			this.makeClearButton(this.otherDiv)
 		}
 	}
 
@@ -27,39 +35,37 @@ export class ConsoleModal extends Modal {
 	}
 
 	appendLogResult(text: string | Buffer, type = ConsoleType.Common) {
+		const logDiv = this.logDiv;
 		const date = new Date();
 		const padL = (nr: number, len = 2, chr = `0`) => `${nr}`.padStart(2, chr);
-		const dateTime = `<span style="color: green;">[${padL(date.getHours())}:${padL(date.getMinutes())}:${padL(date.getSeconds())}]</span>: `
-		let textRender = ''
+		let textRenderClass = ''
+		const textRender = text.toString().trimStart();
 		switch (type) {
 			case ConsoleType.Common:
-				textRender = text.toString().trimStart();
+				textRenderClass = ''
 				break;
 			case ConsoleType.Warning:
-				textRender = `<span style="color: #f5be05;">${text.toString().trimStart()}</span>`
+				textRenderClass = 'vitepress-log-warning'
 				break;
 			case ConsoleType.Error:
-				textRender = `<span style="color: red;">${text.toString().trimStart()}</span>`
+				textRenderClass = 'vitepress-log-error'
 				break
 		}
-		if (!this.logContent) {
-			this.logContent += (`${dateTime}` + textRender)
-		} else {
-			this.logContent += (`\n${dateTime}` + textRender);
-		}
-		const {contentEl} = this;
-		contentEl.innerHTML = this.logContent + '<br>';
-		contentEl.appendChild(this.makeClearButton())
-		contentEl.scrollTop = contentEl.scrollHeight;
+		const div = logDiv.createDiv()
+		div.createSpan({
+			text: `[${padL(date.getHours())}:${padL(date.getMinutes())}:${padL(date.getSeconds())}]`,
+			cls: 'vitepress-log-green'
+		})
+		div.createSpan({text: textRender, cls: textRenderClass})
+		this.contentEl.scrollTop = this.contentEl.scrollHeight;
 	}
 
-	private makeClearButton() {
-		const button = document.createElement("button");
-		button.innerHTML = "clear logs";
-		button.style.marginTop = '8px';
+	private makeClearButton(ele: HTMLElement) {
+		const button = ele.createEl("button", {text: 'clear logs', cls: 'vitepress-clear-button'});
 		button.addEventListener("click", () => {
-			this.contentEl.innerHTML = this.CONSOLE_MODAL_EMPTY_TEXT
-			this.logContent = '';
+			this.logDiv.empty();
+			this.otherDiv.empty();
+			this.otherDiv.createSpan({text: this.CONSOLE_MODAL_EMPTY_TEXT})
 		});
 		return button;
 	}

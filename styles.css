@@ -1,18 +1,13 @@
-/*
-
-This CSS file will be included with your plugin, and
-available in the app when your plugin is enabled.
-
-If your plugin does not need CSS, delete this file.
-
-*/
-
 .vitepress-ribbon-icon-hide {
 	display: none;
 }
 
 .vitepress-debug-console {
 	--dialog-width: 75%;
+}
+
+.vitepress-clear-button {
+	margin-top: 8px;
 }
 
 .vitepress-debug-console .modal-content {
@@ -55,16 +50,38 @@ If your plugin does not need CSS, delete this file.
 	font-size: 0.9em;
 }
 
-.obsidian-setting-sub {
+.vitepress-setting-sub {
 	margin-left: 50px;
 	white-space: pre;
 }
 
-.obsidian-setting-warningtext-misj {
+.vitepress-ml-4 {
+	margin-left: 4px;
+}
+
+.vitepress-setting-warningtext {
 	white-space: pre;
+}
+
+.vitepress-setting-max-width {
+	white-space: pre;
+	flex: 1;
+	max-width: 250px;
 }
 
 .obsidian-setting-required .setting-item-name::before {
 	content: " * ";
 	color: #CB3030FF;
+}
+
+.vitepress-log-green {
+	color: green;
+}
+
+.vitepress-log-error {
+	color: red;
+}
+
+.vitepress-log-warning {
+	color: #f5be05;
 }
