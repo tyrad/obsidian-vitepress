@@ -23,6 +23,7 @@
 	},
 	"dependencies": {
 		"i18next": "^23.12.2",
+		"obsidian-dataview": "^0.5.64",
 		"open": "^10.1.0",
 		"strip-ansi": "^7.1.0",
 		"tree-kill": "^1.2.2"

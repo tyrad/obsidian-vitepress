@@ -9,6 +9,7 @@ export interface MyPluginSettings {
 	publishedContentList: PublishedContentType[];
 	showRibbonIconButton: boolean;
 	needCleanDirFolder: boolean;
+	useDataView: boolean;
 	vitepressDir: string;
 	vitepressSrcDir: string;
 	vitepressStaticDir: string;
@@ -19,6 +20,7 @@ export interface MyPluginSettings {
 export const DEFAULT_SETTINGS: MyPluginSettings = {
 	publishedContentList: [],
 	needCleanDirFolder: false,
+	useDataView: false,
 	showRibbonIconButton: true,
 	vitepressDir: '',
 	vitepressSrcDir: '',
@@ -191,6 +193,19 @@ export class SettingTab extends PluginSettingTab {
 						})
 				})
 				.setClass('obsidian-setting-sub');
+
+			new Setting(containerEl)
+				.setName(i18next.t("解析dataview"))
+				.setDesc(i18next.t('是否需要处理dataview代码块'))
+				.addToggle((toggle) => {
+					toggle
+						.setValue(this.plugin.settings.useDataView)
+						.onChange(async (useDataView) => {
+							this.plugin.settings.useDataView = useDataView;
+							await this.plugin.saveData(this.plugin.settings);
+						});
+				})
+				.setClass('obsidian-setting-sub')
 		}
 	}
 

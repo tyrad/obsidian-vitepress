@@ -2,13 +2,14 @@ import * as child_process from 'child_process';
 import {App, Notice} from "obsidian";
 import {noticeError, noticeInfo} from "../utils/log";
 import {getCurrentMdFileRelativePath} from "../utils/markdownPathUtils";
-import {copyFileSyncRecursive, deleteFilesInDirectorySync} from "../utils/pathUtils";
+import {deleteFilesInDirectorySync} from "../utils/pathUtils";
 import {ConsoleModal, ConsoleType} from "../modal/consoleModal";
 import {ICON_SVG_CLOSE, ICON_SVG_PREVIEW} from "../static/icons";
 import * as fs from "fs";
 import ObsidianPlugin from "../main";
 import open from 'open';
 import stripAnsi from 'strip-ansi';
+import {DataviewActions} from "../dataview/dataview";
 
 export class VitepressCommand {
 	kill = require('tree-kill');
@@ -23,6 +24,7 @@ export class VitepressCommand {
 	private isRunning: undefined | boolean = undefined;
 
 	consoleModal: ConsoleModal;
+	dataview: DataviewActions;
 
 	getVitepressFolder() {
 		return this.plugin.settings.vitepressDir;
@@ -40,6 +42,7 @@ export class VitepressCommand {
 				this.kill(this.previewChildProcess.pid)
 			}
 		});
+		this.dataview = new DataviewActions(app, plugin);
 	}
 
 	preview() {
@@ -138,7 +141,7 @@ export class VitepressCommand {
 		if (!this.checkSetting()) {
 			return
 		}
-		const copyFileTask = () => {
+		const copyFileTask = async () => {
 			// @ts-ignore.
 			const basePath = this.app.vault.adapter.basePath;
 			const relativeFile = getCurrentMdFileRelativePath(this.app, false)
@@ -146,18 +149,20 @@ export class VitepressCommand {
 				const fullFilePath = `${basePath}/${relativeFile}`
 				const copyTo = `${this.plugin.settings.vitepressSrcDir}/${relativeFile}`;
 				try {
-					copyFileSyncRecursive(fullFilePath, copyTo)
+					await this.dataview.copyFileSyncRecursive(fullFilePath, copyTo)
 				} catch (err) {
 					new Notice('文件拷贝失败' + err);
 				}
 			}
 		}
 		if (this.isRunning) {
-			copyFileTask()
-			this.openBrowserByUrl(this.startedVitepressHostAddress + '/' + getCurrentMdFileRelativePath(this.app))
+			(async () => {
+				await copyFileTask()
+				this.openBrowserByUrl(this.startedVitepressHostAddress + '/' + getCurrentMdFileRelativePath(this.app))
+			})()
 		} else {
-			this.startPreview(() => {
-				copyFileTask()
+			this.startPreview(async () => {
+				await copyFileTask()
 				this.openBrowserByUrl(this.startedVitepressHostAddress + '/' + getCurrentMdFileRelativePath(this.app))
 			});
 		}
@@ -205,7 +210,7 @@ export class VitepressCommand {
 		return true
 	}
 
-	private docsPrepare() {
+	private async docsPrepare() {
 		const actionName = '[docsPrepare]:'
 		const vitepressSrcDir = this.plugin.settings.vitepressSrcDir;
 		if (!vitepressSrcDir) {
@@ -226,12 +231,12 @@ export class VitepressCommand {
 				return false;
 			}
 			const files = fs.readdirSync(vitepressStaicDir);
-			files.forEach(file => {
+			for (const file of files) {
 				const filePath = `${vitepressStaicDir}/${file}`;
 				const stats = fs.statSync(filePath);
-				copyFileSyncRecursive(filePath, `${vitepressSrcDir}/${file}`, stats.isDirectory())
+				await this.dataview.copyFileSyncRecursive(filePath, `${vitepressSrcDir}/${file}`, stats.isDirectory())
 				console.log(`copyFileSyncRecursive: ${filePath} `);
-			});
+			}
 		}
 		const folderOrFile = this.plugin.settings.publishedContentList
 		this.consoleModal.appendLogResult(`${actionName} copy '${folderOrFile.map(item => item.name)}' to folder '${vitepressSrcDir}'`)
@@ -240,7 +245,7 @@ export class VitepressCommand {
 		for (const subContent of folderOrFile) {
 			const srcPath = `${workspace}/${subContent.name}`
 			if (fs.existsSync(srcPath)) {
-				copyFileSyncRecursive(srcPath, `${vitepressSrcDir}/${subContent.name}`, subContent.isFolder, this.plugin.settings.ignoreFileRegex)
+				await this.dataview.copyFileSyncRecursive(srcPath, `${vitepressSrcDir}/${subContent.name}`, subContent.isFolder, this.plugin.settings.ignoreFileRegex)
 			} else {
 				this.consoleModal.appendLogResult(`${actionName} '${srcPath}' not exists`, ConsoleType.Warning)
 			}

@@ -1,4 +1,4 @@
-import {App, setIcon, Plugin, addIcon, PluginManifest, moment} from 'obsidian';
+import {App, setIcon, Plugin, addIcon, PluginManifest} from 'obsidian';
 import {DEFAULT_SETTINGS, MyPluginSettings, SettingTab} from "./setting/settingTab";
 import {VitepressCommand} from "./command/vitepressCommand";
 import {ICON_NAME, ICON_SVG_CLOSE, ICON_SVG_PREVIEW} from "./static/icons";
