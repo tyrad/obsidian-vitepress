@@ -5,9 +5,8 @@ import i18next from "i18next";
 
 type PublishedContentType = { isFolder: boolean, name: string }
 
-export interface MyPluginSettings {
+export interface VitepressPluginSettings {
 	publishedContentList: PublishedContentType[];
-	showRibbonIconButton: boolean;
 	needCleanDirFolder: boolean;
 	vitepressDir: string;
 	vitepressSrcDir: string;
@@ -16,10 +15,9 @@ export interface MyPluginSettings {
 	ignoreFileRegex: string
 }
 
-export const DEFAULT_SETTINGS: MyPluginSettings = {
+export const DEFAULT_SETTINGS: VitepressPluginSettings = {
 	publishedContentList: [],
 	needCleanDirFolder: false,
-	showRibbonIconButton: true,
 	vitepressDir: '',
 	vitepressSrcDir: '',
 	vitepressStaticDir: '',
@@ -49,19 +47,6 @@ export class SettingTab extends PluginSettingTab {
 		const {containerEl} = this;
 		new Setting(this.containerEl).setName(i18next.t('基本设置')).setHeading();
 		new Setting(containerEl)
-			.setName(i18next.t("是否展示左侧栏按钮"))
-			.setDesc(i18next.t('是否展示左侧栏Ribbon Icon按钮'))
-			.addToggle((toggle) => {
-				toggle
-					.setValue(this.plugin.settings.showRibbonIconButton)
-					.onChange(async (showRibbonIconButton) => {
-						this.plugin.settings.showRibbonIconButton = showRibbonIconButton;
-						await this.plugin.saveData(this.plugin.settings);
-						this.plugin.reloadRibbonIcon();
-					});
-			});
-
-		new Setting(containerEl)
 			.setName(i18next.t('发布内容'))
 			.setDesc(i18next.t('在当前obsidian文档中，选择需要复制到vitepress目录的一级目录或文件'))
 			.addExtraButton((cb) => {
@@ -75,10 +60,10 @@ export class SettingTab extends PluginSettingTab {
 
 		if (this.showExternalButton) {
 			const savedList = this.plugin.settings.publishedContentList || [];
-			const folderWrapBox = createEl('div', {
+			const folderWrapBox = containerEl.createEl('div', {
 				cls: ['vite-press-publisher-folder-config']
 			});
-			const fileWrapBox = createEl('div', {
+			const fileWrapBox = containerEl.createEl('div', {
 				cls: ['vite-press-publisher-folder-config']
 			});
 			this.loadFolder(list => {
@@ -93,8 +78,6 @@ export class SettingTab extends PluginSettingTab {
 					this.addMultiSelectItem(fileWrapBox, x.name, contain, false)
 				}
 			});
-			containerEl.append(folderWrapBox);
-			containerEl.append(fileWrapBox);
 		}
 
 		new Setting(this.containerEl).setName(i18next.t("目录设置")).setHeading();
@@ -103,8 +86,7 @@ export class SettingTab extends PluginSettingTab {
 			.setName(i18next.t("vitepress路径"))
 			.setDesc(i18next.t('请填写绝对路径'))
 			.addText(text => {
-				text.inputEl.style.flex = '1';
-				text.inputEl.style.maxWidth = '250px';
+				text.inputEl.classList.add('vitepress-setting-max-width')
 				return text
 					.setPlaceholder('')
 					.setValue(this.plugin.settings.vitepressDir)
@@ -119,8 +101,7 @@ export class SettingTab extends PluginSettingTab {
 			.setName(i18next.t("vitepress的srcDir路径"))
 			.setDesc(i18next.t('请填写绝对路径'))
 			.addText(text => {
-				text.inputEl.style.flex = '1';
-				text.inputEl.style.maxWidth = '250px';
+				text.inputEl.classList.add('vitepress-setting-max-width')
 				return text
 					.setPlaceholder('')
 					.setValue(this.plugin.settings.vitepressSrcDir)
@@ -156,14 +137,13 @@ export class SettingTab extends PluginSettingTab {
 							this.updateWarningText();
 						});
 				})
-				.setClass('obsidian-setting-sub')
+				.setClass('vitepress-setting-sub')
 
 			new Setting(containerEl)
 				.setName(i18next.t("vitepress的固定文件目录"))
 				.setDesc(i18next.t('请填写绝对路径\n如果设置了,执行命令时,此目录的内容将复制到srcDir目录'))
 				.addText(text => {
-					text.inputEl.style.flex = '1';
-					text.inputEl.style.maxWidth = '250px';
+					text.inputEl.classList.add('vitepress-setting-max-width')
 					return text
 						.setPlaceholder('')
 						.setValue(this.plugin.settings.vitepressStaticDir)
@@ -173,14 +153,13 @@ export class SettingTab extends PluginSettingTab {
 							this.updateWarningText();
 						});
 				})
-				.setClass('obsidian-setting-sub')
+				.setClass('vitepress-setting-sub')
 
 			new Setting(containerEl)
 				.setName(i18next.t("过滤obsidian文件或目录"))
 				.setDesc(i18next.t('过滤文件名满足该正则表达式的文件,如果不填,则不进行过滤'))
 				.addText(text => {
-					text.inputEl.style.flex = '1';
-					text.inputEl.style.maxWidth = '250px';
+					text.inputEl.classList.add('vitepress-setting-max-width')
 					return text
 						.setPlaceholder(i18next.t('请输入正则表达式'))
 						.setValue(this.plugin.settings.ignoreFileRegex)
@@ -190,18 +169,18 @@ export class SettingTab extends PluginSettingTab {
 							this.updateWarningText();
 						})
 				})
-				.setClass('obsidian-setting-sub');
+				.setClass('vitepress-setting-sub');
 		}
 	}
 
 	updateWarningText() {
-		const ele = document.getElementsByClassName('obsidian-setting-warningtext-misj')[0]
+		const ele = document.getElementsByClassName('vitepress-setting-warningtext')[0]
 		if (ele) {
 			ele.remove()
 		}
 		const tip = i18next.t('根据当前配置，执行预览或者编译时，将执行如下操作')
 		this.appendWarningText(`${tip}:
-${this.plugin.settings.needCleanDirFolder ? `- ${i18next.t('首先会清空srcDir目录\n')}` : ''}${this.plugin.settings.vitepressStaticDir ? `- ${i18next.t('将配置的固定文件目录内的文件移动到srcDir目录\n')}` : ''}- ${i18next.t('将发布内容移动到srcDir目录')}${this.plugin.settings.ignoreFileRegex ? `(${i18next.t('过滤文件名满足正则表达式的文件', {regex: `${this.plugin.settings.ignoreFileRegex}`})})` : ''}`, ['obsidian-setting-warningtext-misj'])
+${this.plugin.settings.needCleanDirFolder ? `- ${i18next.t('首先会清空srcDir目录\n')}` : ''}${this.plugin.settings.vitepressStaticDir ? `- ${i18next.t('将配置的固定文件目录内的文件移动到srcDir目录\n')}` : ''}- ${i18next.t('将发布内容移动到srcDir目录')}${this.plugin.settings.ignoreFileRegex ? `(${i18next.t('过滤文件名满足正则表达式的文件', {regex: `${this.plugin.settings.ignoreFileRegex}`})})` : ''}`, ['vitepress-setting-warningtext'])
 	}
 
 	publishSetting() {
@@ -229,7 +208,7 @@ ${this.plugin.settings.needCleanDirFolder ? `- ${i18next.t('首先会清空srcDi
 			}
 			const folderList: { name: string, isDir: boolean }[] = []
 			files.forEach(file => {
-				if (file.name != '.obsidian' && file.name != '.DS_Store') {
+				if (file.name != '.DS_Store') {
 					folderList.push({
 						name: file.name,
 						isDir: file.isDirectory()
@@ -241,16 +220,20 @@ ${this.plugin.settings.needCleanDirFolder ? `- ${i18next.t('首先会清空srcDi
 	}
 
 	private appendWarningText(text: string, classList: string[]) {
-		const warning = createEl('div', {
+		const warning = this.containerEl.createEl('div', {
 			cls: ['vitepress-setting-warning', ...classList],
 		});
-		warning.innerHTML = `<span>${text}</span>`
-		this.containerEl.append(warning)
+		warning.createSpan({text})
 	}
 
 	private addMultiSelectItem(superNode: Element, title: string, isEnabled: boolean, isFolder: boolean) {
-		const checkbox = createEl('div', {
-			cls: isEnabled ? ['checkbox-container is-enabled'] : ['checkbox-container'],
+		const selectBox = superNode.createEl('div', {
+			cls: ['setting-item-description', 'switch-box']
+		});
+		selectBox.createDiv({text: title})
+
+		const checkbox = selectBox.createEl('div', {
+			cls: isEnabled ? ['checkbox-container is-enabled vitepress-ml-4'] : ['checkbox-container vitepress-ml-4'],
 			attr: {'id-text': title}
 		})
 		checkbox.addEventListener("click", async () => {
@@ -274,16 +257,5 @@ ${this.plugin.settings.needCleanDirFolder ? `- ${i18next.t('首先会清空srcDi
 			this.plugin.settings.publishedContentList.push(...selectedList);
 			await this.plugin.saveData(this.plugin.settings);
 		});
-		checkbox.style.marginLeft = '4px';
-
-		const selectBox = createEl('div', {
-			cls: ['setting-item-description', 'switch-box']
-		});
-		const text = createEl('div')
-		text.innerHTML = title
-		selectBox.append(text)
-		selectBox.append(checkbox)
-
-		superNode.append(selectBox)
 	}
 }

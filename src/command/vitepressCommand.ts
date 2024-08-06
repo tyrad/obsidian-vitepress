@@ -1,10 +1,10 @@
 import * as child_process from 'child_process';
-import {App, Notice} from "obsidian";
+import {App, Notice, setIcon, Platform} from "obsidian";
 import {noticeError, noticeInfo} from "../utils/log";
 import {getCurrentMdFileRelativePath} from "../utils/markdownPathUtils";
 import {copyFileSyncRecursive, deleteFilesInDirectorySync} from "../utils/pathUtils";
 import {ConsoleModal, ConsoleType} from "../modal/consoleModal";
-import {ICON_SVG_CLOSE, ICON_SVG_PREVIEW} from "../static/icons";
+import {ICON_NAME, ICON_NAME_ON_PREVIEW, ICON_SVG_CLOSE, ICON_SVG_PREVIEW} from "../static/icons";
 import * as fs from "fs";
 import ObsidianPlugin from "../main";
 import open from 'open';
@@ -18,7 +18,7 @@ export class VitepressCommand {
 
 	private readonly app: App;
 	private readonly plugin: ObsidianPlugin;
-	private readonly isWindowsPlatform = process.platform === 'win32'
+	private readonly isWindowsPlatform = Platform.isWin
 	private previewChildProcess: child_process.ChildProcessWithoutNullStreams | null = null
 	private isRunning: undefined | boolean = undefined;
 
@@ -71,18 +71,15 @@ export class VitepressCommand {
 		}
 		this.consoleModal.appendLogResult(this.getVitepressFolder());
 		let command;
-		switch (process.platform) {
-			case 'win32':
-				command = `start cmd /k bash ${scriptPath}`;
-				break;
-			case 'darwin':
-				// refer to : https://segmentfault.com/q/1010000024473935
-				command = `osascript -e 'tell application "Terminal" to do script "cd ${this.getVitepressFolder()} && bash ${scriptPath}"' -e 'tell application "Terminal" to activate'`
-				break;
-			default:
-				this.consoleModal.appendLogResult('Unsupported operating system')
-				new Notice('Unsupported operating system')
-				return;
+		if (Platform.isWin) {
+			command = `start cmd /k bash ${scriptPath}`;
+		} else if (Platform.isMacOS) {
+			// refer: https://segmentfault.com/q/1010000024473935
+			command = `osascript -e 'tell application "Terminal" to do script "cd ${this.getVitepressFolder()} && bash ${scriptPath}"' -e 'tell application "Terminal" to activate'`
+		} else {
+			this.consoleModal.appendLogResult('Unsupported operating system')
+			new Notice('Unsupported operating system')
+			return;
 		}
 		this.consoleModal.appendLogResult('run script on new terminal：' + command)
 		child_process.exec(command, (error, stdout, stderr) => {
@@ -330,13 +327,16 @@ export class VitepressCommand {
 
 	private updateState(running: boolean) {
 		this.isRunning = running;
-		const ele = document.getElementsByClassName('obsidian-preview')[0]
 		if (running) {
-			ele && (ele.innerHTML = ICON_SVG_PREVIEW);
+			if (this.plugin.previewRibbonIconEl) {
+				setIcon(this.plugin.previewRibbonIconEl, ICON_NAME_ON_PREVIEW);
+			}
 		} else {
 			this.devChildProcess = null;
 			this.startedVitepressHostAddress = '';
-			ele && (ele.innerHTML = ICON_SVG_CLOSE);
+			if (this.plugin.previewRibbonIconEl) {
+				setIcon(this.plugin.previewRibbonIconEl, ICON_NAME);
+			}
 		}
 	}
 

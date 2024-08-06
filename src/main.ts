@@ -1,7 +1,7 @@
-import {App, setIcon, Plugin, addIcon, PluginManifest, moment} from 'obsidian';
-import {DEFAULT_SETTINGS, MyPluginSettings, SettingTab} from "./setting/settingTab";
+import {App, setIcon, Plugin, addIcon, PluginManifest} from 'obsidian';
+import {DEFAULT_SETTINGS, VitepressPluginSettings, SettingTab} from "./setting/settingTab";
 import {VitepressCommand} from "./command/vitepressCommand";
-import {ICON_NAME, ICON_SVG_CLOSE, ICON_SVG_PREVIEW} from "./static/icons";
+import {ICON_NAME, ICON_NAME_ON_PREVIEW, ICON_SVG_CLOSE, ICON_SVG_PREVIEW} from "./static/icons";
 import {resources, translationLanguage} from "./i18n/i18next";
 import i18next from "i18next";
 
@@ -11,7 +11,7 @@ export default class ObsidianPlugin extends Plugin {
 
 	vitePressCmd: VitepressCommand
 	settingTab: SettingTab
-	settings: MyPluginSettings;
+	settings: VitepressPluginSettings;
 
 	constructor(app: App, manifest: PluginManifest) {
 		super(app, manifest);
@@ -28,6 +28,7 @@ export default class ObsidianPlugin extends Plugin {
 		});
 
 		addIcon(ICON_NAME, ICON_SVG_CLOSE);
+		addIcon(ICON_NAME_ON_PREVIEW, ICON_SVG_PREVIEW);
 
 		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
 
@@ -82,14 +83,9 @@ export default class ObsidianPlugin extends Plugin {
 	}
 
 	reloadRibbonIcon() {
-		if (this.settings.showRibbonIconButton) {
-			this.previewRibbonIconEl = this.addRibbonIcon(this.vitePressCmd.devChildProcess == null ? ICON_NAME : ICON_SVG_PREVIEW, '点击启动vitepress', (evt: MouseEvent) => {
-				this.vitePressCmd.previewOrClose(this.previewRibbonIconEl)
-			});
-		} else {
-			this.previewRibbonIconEl?.remove()
-			this.previewRibbonIconEl = null
-		}
+		this.previewRibbonIconEl = this.addRibbonIcon(ICON_NAME, 'start vitepress', (evt: MouseEvent) => {
+			this.vitePressCmd.previewOrClose(this.previewRibbonIconEl)
+		});
 	}
 
 	private handleViewActionButton(needAddIcon: boolean) {
