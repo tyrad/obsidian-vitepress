@@ -89,7 +89,8 @@ export class DataviewActions {
 				}
 				fs.copyFileSync(src, dest)
 			} catch (err) {
-				console.error(err);
+				console.error(err); // err.message
+				fs.writeFileSync(dest, `\`\`\`\nDataview:${err.message}\n\`\`\``, {encoding: 'utf8'});
 			}
 		} else {
 			fs.copyFileSync(src, dest)
