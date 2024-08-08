@@ -1,7 +1,6 @@
 import * as child_process from 'child_process';
 import {App, Notice, setIcon, Platform} from "obsidian";
 import {
-	copyFileSyncRecursive,
 	deleteFileOrFolder,
 	deleteFilesInDirectorySync,
 	getCurrentMdFileRelativePath
@@ -155,7 +154,7 @@ export class VitepressCommand {
 				this.openBrowserByUrl(this.startedVitepressHostAddress + '/' + getCurrentMdFileRelativePath(this.app))
 			})()
 		} else {
-			this.startPreview(false,async () => {
+			this.startPreview(false, async () => {
 				await this.copyToVitepressSrc(getCurrentMdFileRelativePath(this.app, false))
 				this.openBrowserByUrl(this.startedVitepressHostAddress + '/' + getCurrentMdFileRelativePath(this.app))
 				this.startFileWatcher()
@@ -172,23 +171,23 @@ export class VitepressCommand {
 		this.fsWatcher?.close();
 		this.fsWatcher = fs.watch(workspace,
 			{recursive: true},
-			(_, filename) => {
+			async (_, filename) => {
 				if (!filename) {
 					return
 				}
 				const obFilePath = `${workspace}${path.sep}${filename}`
 				const obFileExisted = fs.existsSync(obFilePath)
 				const copyTo = `${this.plugin.settings.vitepressSrcDir}${path.sep}${filename}`;
-				if (obFileExisted) {
+				if (!obFileExisted) {
 					deleteFileOrFolder(copyTo);
 					return
 				}
 				const stats = fs.statSync(obFilePath);
 				if (stats.isDirectory()) {
-					this.copyToVitepressSrc(filename, true);
+					await this.copyToVitepressSrc(filename, true);
 				} else {
 					if (/\.md$/.test(filename)) {
-						this.copyToVitepressSrc(filename);
+						await this.copyToVitepressSrc(filename);
 					}
 				}
 			})

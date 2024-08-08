@@ -40,13 +40,14 @@ export class DataviewActions {
 				return
 			}
 			if (isCopyDir) {
-				readdirSync(src, {withFileTypes: true}).forEach(file => {
+				const content = readdirSync(src, {withFileTypes: true})
+				for (const file of content) {
 					if (file.isDirectory()) {
-						this.copyFileSyncRecursive(src + sep + file.name, dest + sep + file.name, true, regexText)
+						await this.copyFileSyncRecursive(src + sep + file.name, dest + sep + file.name, true, regexText)
 					} else {
-						this.copyFileSyncRecursive(src + sep + file.name, dest + sep + file.name, false, regexText)
+						await this.copyFileSyncRecursive(src + sep + file.name, dest + sep + file.name, false, regexText)
 					}
-				})
+				}
 			} else {
 				await this.copyFileSync(src, dest);
 			}
