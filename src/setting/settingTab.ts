@@ -8,6 +8,7 @@ type PublishedContentType = { isFolder: boolean, name: string }
 export interface VitepressPluginSettings {
 	publishedContentList: PublishedContentType[];
 	needCleanDirFolder: boolean;
+	useDataView: boolean;
 	vitepressDir: string;
 	vitepressSrcDir: string;
 	vitepressStaticDir: string;
@@ -19,6 +20,7 @@ export interface VitepressPluginSettings {
 export const DEFAULT_SETTINGS: VitepressPluginSettings = {
 	publishedContentList: [],
 	needCleanDirFolder: false,
+	useDataView: false,
 	vitepressDir: '',
 	vitepressSrcDir: '',
 	vitepressStaticDir: '',
@@ -169,6 +171,17 @@ export class SettingTab extends PluginSettingTab {
 						this.plugin.settings.autoSyncMdFile = value;
 						await this.plugin.saveData(this.plugin.settings);
 					})
+			})
+		new Setting(containerEl)
+			.setName(i18next.t("解析dataview"))
+			.setDesc(i18next.t('是否需要处理dataview代码块(需要已经安装dataview插件)'))
+			.addToggle((toggle) => {
+				toggle
+					.setValue(this.plugin.settings.useDataView)
+					.onChange(async (useDataView) => {
+						this.plugin.settings.useDataView = useDataView;
+						await this.plugin.saveData(this.plugin.settings);
+					});
 			})
 	}
 

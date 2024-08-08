@@ -26,5 +26,7 @@
 	"guide-to-setting": "未设置{{name}}路径,点击设置",
 	"file-not-existed-check": "{{name}}文件不存在，请检查设置",
 	"auto-sync-md": "自动同步文件",
-	"auto-sync-md-desc": "当运行vitepress dev时,是否自动同步.md文件到Vitepress srcDir"
+	"auto-sync-md-desc": "当运行vitepress dev时,是否自动同步.md文件到Vitepress srcDir",
+	"解析dataview": "解析dataview",
+	"是否需要处理dataview代码块(需要已经安装dataview插件)": "是否需要处理dataview代码块(需要已经安装dataview插件)"
 }

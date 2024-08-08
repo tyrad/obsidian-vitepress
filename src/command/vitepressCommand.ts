@@ -15,6 +15,8 @@ import stripAnsi from 'strip-ansi';
 import i18next from "i18next";
 import {FSWatcher} from "fs";
 import * as path from "node:path";
+import {DataviewActions} from "../dataview/dataview";
+
 
 export class VitepressCommand {
 	kill = require('tree-kill');
@@ -29,6 +31,7 @@ export class VitepressCommand {
 	private isRunning: undefined | boolean = undefined;
 	private fsWatcher: null | FSWatcher = null
 	consoleModal: ConsoleModal;
+	dataview: DataviewActions;
 
 	getVitepressFolder() {
 		return this.plugin.settings.vitepressDir;
@@ -47,6 +50,7 @@ export class VitepressCommand {
 			}
 			this.fsWatcher?.close();
 		});
+		this.dataview = new DataviewActions(app, plugin);
 	}
 
 	preview() {
@@ -146,11 +150,13 @@ export class VitepressCommand {
 			return
 		}
 		if (this.isRunning) {
-			this.copyToVitepressSrc(getCurrentMdFileRelativePath(this.app, false))
-			this.openBrowserByUrl(this.startedVitepressHostAddress + '/' + getCurrentMdFileRelativePath(this.app))
+			(async () => {
+				await this.copyToVitepressSrc(getCurrentMdFileRelativePath(this.app, false))
+				this.openBrowserByUrl(this.startedVitepressHostAddress + '/' + getCurrentMdFileRelativePath(this.app))
+			})()
 		} else {
-			this.startPreview(false, () => {
-				this.copyToVitepressSrc(getCurrentMdFileRelativePath(this.app, false))
+			this.startPreview(false,async () => {
+				await this.copyToVitepressSrc(getCurrentMdFileRelativePath(this.app, false))
 				this.openBrowserByUrl(this.startedVitepressHostAddress + '/' + getCurrentMdFileRelativePath(this.app))
 				this.startFileWatcher()
 			});
@@ -275,7 +281,7 @@ export class VitepressCommand {
 		});
 	}
 
-	private docsPrepare() {
+	private async docsPrepare() {
 		const actionName = '[docsPrepare]:'
 		const vitepressSrcDir = this.plugin.settings.vitepressSrcDir;
 		if (!vitepressSrcDir) {
@@ -296,11 +302,11 @@ export class VitepressCommand {
 				return false;
 			}
 			const files = fs.readdirSync(vitepressStaicDir);
-			files.forEach(file => {
+			for (const file of files) {
 				const filePath = `${vitepressStaicDir}/${file}`;
 				const stats = fs.statSync(filePath);
-				copyFileSyncRecursive(filePath, `${vitepressSrcDir}/${file}`, stats.isDirectory())
-			});
+				await this.dataview.copyFileSyncRecursive(filePath, `${vitepressSrcDir}/${file}`, stats.isDirectory())
+			}
 		}
 		const folderOrFile = this.plugin.settings.publishedContentList
 		this.consoleModal.appendLogResult(`${actionName} copy '${folderOrFile.map(item => item.name)}' to folder '${vitepressSrcDir}'`)
@@ -309,7 +315,7 @@ export class VitepressCommand {
 		for (const subContent of folderOrFile) {
 			const srcPath = `${workspace}/${subContent.name}`
 			if (fs.existsSync(srcPath)) {
-				copyFileSyncRecursive(srcPath, `${vitepressSrcDir}/${subContent.name}`, subContent.isFolder, this.plugin.settings.ignoreFileRegex)
+				await this.dataview.copyFileSyncRecursive(srcPath, `${vitepressSrcDir}/${subContent.name}`, subContent.isFolder, this.plugin.settings.ignoreFileRegex)
 			} else {
 				this.consoleModal.appendLogResult(`${actionName} '${srcPath}' not exists`, ConsoleType.Warning)
 			}
@@ -371,14 +377,14 @@ export class VitepressCommand {
 		}
 	}
 
-	private copyToVitepressSrc(relativeFile: string, isCopyDir = false) {
+	private async copyToVitepressSrc(relativeFile: string, isCopyDir = false) {
 		// @ts-ignore.
 		const basePath = this.app.vault.adapter.basePath;
 		if (relativeFile) {
 			const fullFilePath = `${basePath}${path.sep}${relativeFile}`
 			const copyTo = `${this.plugin.settings.vitepressSrcDir}${path.sep}${relativeFile}`;
 			try {
-				copyFileSyncRecursive(fullFilePath, copyTo, isCopyDir)
+				await this.dataview.copyFileSyncRecursive(fullFilePath, copyTo, isCopyDir)
 			} catch (err) {
 				new Notice('file copy failed' + err);
 			}
