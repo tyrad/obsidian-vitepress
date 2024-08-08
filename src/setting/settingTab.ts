@@ -45,10 +45,10 @@ export class SettingTab extends PluginSettingTab {
 
 	private configBasicSetting() {
 		const {containerEl} = this;
-		new Setting(this.containerEl).setName(i18next.t('基本设置')).setHeading();
+		new Setting(this.containerEl).setName(i18next.t('basic-setting')).setHeading();
 		new Setting(containerEl)
-			.setName(i18next.t('发布内容'))
-			.setDesc(i18next.t('在当前obsidian文档中，选择需要复制到vitepress目录的一级目录或文件'))
+			.setName(i18next.t('publish-content'))
+			.setDesc(i18next.t('publish-content-desc'))
 			.addExtraButton((cb) => {
 				// 内置icon见： https://lucide.dev/icons/
 				cb.setIcon(!this.showExternalButton ? "up-chevron-glyph" : 'down-chevron-glyph')
@@ -80,11 +80,11 @@ export class SettingTab extends PluginSettingTab {
 			});
 		}
 
-		new Setting(this.containerEl).setName(i18next.t("目录设置")).setHeading();
+		new Setting(this.containerEl).setName(i18next.t("folder-setting")).setHeading();
 
 		new Setting(containerEl)
-			.setName(i18next.t("vitepress路径"))
-			.setDesc(i18next.t('请填写绝对路径'))
+			.setName(i18next.t("vitepress-folder-path"))
+			.setDesc(i18next.t('need-absolute-path'))
 			.addText(text => {
 				text.inputEl.classList.add('vitepress-setting-max-width')
 				return text
@@ -98,8 +98,8 @@ export class SettingTab extends PluginSettingTab {
 			.setClass('obsidian-setting-required');
 
 		new Setting(containerEl)
-			.setName(i18next.t("vitepress的srcDir路径"))
-			.setDesc(i18next.t('请填写绝对路径'))
+			.setName(i18next.t("vitepress-srcDir-path"))
+			.setDesc(i18next.t('need-absolute-path'))
 			.addText(text => {
 				text.inputEl.classList.add('vitepress-setting-max-width')
 				return text
@@ -114,7 +114,7 @@ export class SettingTab extends PluginSettingTab {
 
 
 		new Setting(containerEl)
-			.setName(i18next.t('高级设置'))
+			.setName(i18next.t('adv-settings'))
 			.addExtraButton((cb) => {
 				// 内置icon见： https://lucide.dev/icons/
 				cb.setIcon(!this.showFolderAdvanceButton ? "up-chevron-glyph" : 'down-chevron-glyph')
@@ -126,8 +126,8 @@ export class SettingTab extends PluginSettingTab {
 		if (this.showFolderAdvanceButton) {
 
 			new Setting(containerEl)
-				.setName(i18next.t("执行命令时,先清空srcDir目录"))
-				.setDesc(i18next.t('vitepress执行预览或者编译时,是否先清空srcDir目录,再执行其他操作'))
+				.setName(i18next.t("clean-src-dir"))
+				.setDesc(i18next.t('clean-src-dir-desc'))
 				.addToggle((toggle) => {
 					toggle
 						.setValue(this.plugin.settings.needCleanDirFolder)
@@ -140,8 +140,8 @@ export class SettingTab extends PluginSettingTab {
 				.setClass('vitepress-setting-sub')
 
 			new Setting(containerEl)
-				.setName(i18next.t("vitepress的固定文件目录"))
-				.setDesc(i18next.t('请填写绝对路径\n如果设置了,执行命令时,此目录的内容将复制到srcDir目录'))
+				.setName(i18next.t("vitepress-fixed-dir"))
+				.setDesc(i18next.t('vitepress-fixed-dir-desc'))
 				.addText(text => {
 					text.inputEl.classList.add('vitepress-setting-max-width')
 					return text
@@ -156,12 +156,12 @@ export class SettingTab extends PluginSettingTab {
 				.setClass('vitepress-setting-sub')
 
 			new Setting(containerEl)
-				.setName(i18next.t("过滤obsidian文件或目录"))
-				.setDesc(i18next.t('过滤文件名满足该正则表达式的文件,如果不填,则不进行过滤'))
+				.setName(i18next.t("filter-doc"))
+				.setDesc(i18next.t('filter-doc-desc'))
 				.addText(text => {
 					text.inputEl.classList.add('vitepress-setting-max-width')
 					return text
-						.setPlaceholder(i18next.t('请输入正则表达式'))
+						.setPlaceholder(i18next.t('enter-regex'))
 						.setValue(this.plugin.settings.ignoreFileRegex)
 						.onChange(async (value) => {
 							this.plugin.settings.ignoreFileRegex = value;
@@ -178,19 +178,18 @@ export class SettingTab extends PluginSettingTab {
 		if (ele) {
 			ele.remove()
 		}
-		const tip = i18next.t('根据当前配置，执行预览或者编译时，将执行如下操作')
+		const tip = i18next.t('plugin-action-tip')
 		this.appendWarningText(`${tip}:
-${this.plugin.settings.needCleanDirFolder ? `- ${i18next.t('首先会清空srcDir目录\n')}` : ''}${this.plugin.settings.vitepressStaticDir ? `- ${i18next.t('将配置的固定文件目录内的文件移动到srcDir目录\n')}` : ''}- ${i18next.t('将发布内容移动到srcDir目录')}${this.plugin.settings.ignoreFileRegex ? `(${i18next.t('过滤文件名满足正则表达式的文件', {regex: `${this.plugin.settings.ignoreFileRegex}`})})` : ''}`, ['vitepress-setting-warningtext'])
+${this.plugin.settings.needCleanDirFolder ? `- ${i18next.t('plugin-action-tip-clean-dir')}` : ''}${this.plugin.settings.vitepressStaticDir ? `- ${i18next.t('plugin-action-tip-move-to-src-dir')}` : ''}- ${i18next.t('plugin-action-tip-public-move-to-src-dir')}${this.plugin.settings.ignoreFileRegex ? `(${i18next.t('plugin-action-tip-filter-by-regex', {regex: `${this.plugin.settings.ignoreFileRegex}`})})` : ''}`, ['vitepress-setting-warningtext'])
 	}
 
 	publishSetting() {
 		const {containerEl} = this;
-		new Setting(containerEl).setName(i18next.t("发布设置")).setHeading();
+		new Setting(containerEl).setName(i18next.t("publish-setting")).setHeading();
 		new Setting(containerEl)
-			.setName(i18next.t(("发布脚本")))
-			.setDesc(i18next.t('请输入发布脚本的绝对路径或相对vitepress目录的路径'))
+			.setName(i18next.t(("publish-script")))
+			.setDesc(i18next.t('publish-script-desc'))
 			.addText(text => text
-				.setPlaceholder(i18next.t('请输入发布脚本的路径,当前路径为插件路径'))
 				.setValue(this.plugin.settings.deployScriptPath)
 				.onChange(async (value) => {
 					this.plugin.settings.deployScriptPath = value;

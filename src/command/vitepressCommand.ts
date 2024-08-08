@@ -1,14 +1,13 @@
 import * as child_process from 'child_process';
 import {App, Notice, setIcon, Platform} from "obsidian";
-import {noticeError, noticeInfo} from "../utils/log";
-import {getCurrentMdFileRelativePath} from "../utils/markdownPathUtils";
-import {copyFileSyncRecursive, deleteFilesInDirectorySync} from "../utils/pathUtils";
+import {copyFileSyncRecursive, deleteFilesInDirectorySync, getCurrentMdFileRelativePath} from "../utils/pathUtils";
 import {ConsoleModal, ConsoleType} from "../modal/consoleModal";
-import {ICON_NAME, ICON_NAME_ON_PREVIEW, ICON_SVG_CLOSE, ICON_SVG_PREVIEW} from "../static/icons";
+import {ICON_NAME, ICON_NAME_ON_PREVIEW} from "../static/icons";
 import * as fs from "fs";
 import ObsidianPlugin from "../main";
 import open from 'open';
 import stripAnsi from 'strip-ansi';
+import i18next from "i18next";
 
 export class VitepressCommand {
 	kill = require('tree-kill');
@@ -43,10 +42,10 @@ export class VitepressCommand {
 	}
 
 	preview() {
-		this.consoleModal.open();
 		if (!this.checkSetting()) {
 			return
 		}
+		this.consoleModal.open();
 		if (this.previewChildProcess?.pid) {
 			this.kill(this.previewChildProcess.pid)
 		}
@@ -60,13 +59,13 @@ export class VitepressCommand {
 	}
 
 	publish() {
-		this.consoleModal.open();
 		if (!this.checkSetting()) {
 			return
 		}
+		this.consoleModal.open();
 		const scriptPath = this.plugin.settings.deployScriptPath
 		if (!scriptPath) {
-			new Notice('未设置部署脚本的路径')
+			new Notice(i18next.t('publish-script-not-set'))
 			return
 		}
 		this.consoleModal.appendLogResult(this.getVitepressFolder());
@@ -81,7 +80,7 @@ export class VitepressCommand {
 			new Notice('Unsupported operating system')
 			return;
 		}
-		this.consoleModal.appendLogResult('run script on new terminal：' + command)
+		this.consoleModal.appendLogResult('run script on new terminal:' + command)
 		child_process.exec(command, (error, stdout, stderr) => {
 			if (error) {
 				console.error(`exec error: ${error}`);
@@ -91,13 +90,13 @@ export class VitepressCommand {
 	}
 
 	build() {
-		this.consoleModal.open();
 		if (!this.checkSetting()) {
 			return
 		}
 		if (!this.docsPrepare()) {
 			return
 		}
+		this.consoleModal.open();
 		const childProcess = child_process.spawn(`npm`, ['run', 'docs:build'], this.getSpawnOptions());
 		this.commonCommandOnRunning('[vitepress build]:', childProcess)
 	}
@@ -145,7 +144,7 @@ export class VitepressCommand {
 				try {
 					copyFileSyncRecursive(fullFilePath, copyTo)
 				} catch (err) {
-					new Notice('文件拷贝失败' + err);
+					new Notice('file copy failed' + err);
 				}
 			}
 		}
@@ -173,9 +172,9 @@ export class VitepressCommand {
 	private checkSetting() {
 		const actionName = '[CheckSetting]:'
 		const checkMapping: { [key: string]: { desc: string, required: boolean } } = {
-			'vitepressDir': {desc: 'vitepress', required: true},
-			'vitepressSrcDir': {desc: 'vitepress的srcDir', required: false},
-			'vitepressStaticDir': {desc: 'vitepress的固定文件', required: false},
+			'vitepressDir': {desc: i18next.t('vitepress-folder-path'), required: true},
+			'vitepressSrcDir': {desc: i18next.t('vitepress-srcDir-path'), required: false},
+			'vitepressStaticDir': {desc: i18next.t('vitepress-fixed-dir'), required: false},
 		}
 		for (const key of Object.keys(checkMapping)) {
 			// 路径的配置值
@@ -183,8 +182,8 @@ export class VitepressCommand {
 			const configPath = this.plugin.settings[key];
 			const configDesc = checkMapping[key].desc;
 			if (!configPath && checkMapping[key].required) {
-				const notice = new Notice(`未设置${configDesc}路径,点击设置`, 3000)
-				this.consoleModal.appendLogResult(`${actionName} 未设置${configDesc}路, 请先设置。`)
+				const tips = i18next.t("guide-to-setting", {name: configDesc})
+				const notice = new Notice(tips, 3000)
 				notice.noticeEl.addEventListener('click', () => {
 					// @ts-ignore
 					this.app.setting.open();
@@ -194,8 +193,9 @@ export class VitepressCommand {
 				return false
 			}
 			if (configPath && !fs.existsSync(configPath)) {
-				new Notice(`${configDesc}文件不存在，请检查设置`, 3000)
-				this.consoleModal.appendLogResult(`${actionName} ${configDesc}文件不存在，请检查设置。`)
+				const tips = i18next.t("file-not-existed-check", {name: configDesc});
+				new Notice(tips, 3000)
+				this.consoleModal.appendLogResult(`${actionName}` + tips)
 				return false
 			}
 		}
@@ -206,8 +206,8 @@ export class VitepressCommand {
 		const actionName = '[docsPrepare]:'
 		const vitepressSrcDir = this.plugin.settings.vitepressSrcDir;
 		if (!vitepressSrcDir) {
-			this.consoleModal.appendLogResult(`${actionName} 未设置vitepress的srcDir路径, 请先设置。`)
-			new Notice('未设置vitepress的srcDir路径')
+			this.consoleModal.appendLogResult(`${actionName} The srcDir path for Vitepress is not set, please set it first.`)
+			new Notice(i18next.t('vitepress-srcDir-path-not-set'))
 			return false;
 		}
 		const vitepressStaicDir = this.plugin.settings.vitepressStaticDir;
@@ -219,7 +219,7 @@ export class VitepressCommand {
 		}
 		if (vitepressStaicDir) {
 			if (!fs.existsSync(vitepressStaicDir)) {
-				this.consoleModal.appendLogResult(`${actionName} '${vitepressStaicDir}' not exists, 停止后续操作。`)
+				this.consoleModal.appendLogResult(`${actionName} '${vitepressStaicDir}' not exists, stopped.`)
 				return false;
 			}
 			const files = fs.readdirSync(vitepressStaicDir);
@@ -227,7 +227,6 @@ export class VitepressCommand {
 				const filePath = `${vitepressStaicDir}/${file}`;
 				const stats = fs.statSync(filePath);
 				copyFileSyncRecursive(filePath, `${vitepressSrcDir}/${file}`, stats.isDirectory())
-				console.log(`copyFileSyncRecursive: ${filePath} `);
 			});
 		}
 		const folderOrFile = this.plugin.settings.publishedContentList
@@ -247,10 +246,10 @@ export class VitepressCommand {
 
 
 	startPreview(finish: (() => void) | null = null): void {
-		this.consoleModal.open();
 		if (!this.checkSetting()) {
 			return
 		}
+		this.consoleModal.open();
 		const actionName = '[vitepress]:'
 		this.consoleModal.appendLogResult(`${actionName} starting...`)
 		// 默认第一次启动的时候为打开主页。 并且第一次启动的时候，将docs的内容复制到knowledge文件夹
@@ -277,13 +276,16 @@ export class VitepressCommand {
 			this.consoleModal.appendLogResult(data, ConsoleType.Warning)
 		});
 		this.devChildProcess.on('close', (code) => {
-			this.consoleModal.appendLogResult(`${actionName} closed ${code ?? ''}`)
-			noticeInfo(`${actionName} closed ${code ?? ''}`)
+			const tips = `${actionName} closed ${code ?? ''}`
+			this.consoleModal.appendLogResult(tips)
+			new Notice(tips);
 			this.updateState(false)
 		});
 		this.devChildProcess.on('error', (err) => {
-			noticeError(`${actionName}Failed to start child process: ` + err)
-			this.consoleModal.appendLogResult(`${actionName}Failed to start child process: ` + err, ConsoleType.Error)
+			const tips = `${actionName}Failed to start child process: ` + err
+			this.consoleModal.appendLogResult(tips, ConsoleType.Error)
+			console.error(tips)
+			new Notice(tips);
 			this.updateState(false);
 		});
 	}
@@ -298,12 +300,14 @@ export class VitepressCommand {
 			this.consoleModal.appendLogResult(this.stripAnsiText(data), ConsoleType.Warning)
 		});
 		process.on('close', (code) => {
-			this.consoleModal.appendLogResult(`${actionName} closed ${code ?? ''}`)
-			noticeInfo(`${actionName} closed ${code ?? ''}`)
+			const tips = `${actionName} closed ${code ?? ''}`
+			this.consoleModal.appendLogResult(tips)
+			new Notice(tips);
 		});
 		process.on('error', (err) => {
-			noticeError(`${actionName} Failed to start child process: ` + err)
-			this.consoleModal.appendLogResult(`${actionName} Failed to start child process: ` + err, ConsoleType.Error)
+			const tips = `${actionName} failed to start child process: ` + err
+			new Notice(tips);
+			this.consoleModal.appendLogResult(tips, ConsoleType.Error)
 		});
 	}
 

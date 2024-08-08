@@ -1,20 +1,8 @@
-import {FileSystemAdapter} from "obsidian";
 import * as fs from "fs";
 import * as path from "path";
 import {sep} from "path";
 import {readdirSync} from "fs";
-
-// refer to : https://github.com/kometenstaub/linked-data-helper/blob/f18e160f091f0a0bd81c5f9a109334bcf74ffadc/src/methods/methods-loc.ts#L16
-export function getAbsolutePath(fileName: string): string {
-	let basePath;
-	if (this.app.vault.adapter instanceof FileSystemAdapter) {
-		basePath = this.app.vault.adapter.getBasePath();
-	} else {
-		throw new Error('Cannot determine base path.');
-	}
-	const relativePath = `${this.app.vault.configDir}/plugins/obsidian-vitepress/${fileName}`;
-	return `${basePath}/${relativePath}`;
-}
+import {App} from "obsidian";
 
 function mathPrefix(path: string, regexText: string) {
 	const name = path.split(sep).pop();
@@ -22,6 +10,18 @@ function mathPrefix(path: string, regexText: string) {
 		return new RegExp(regexText).test(name)
 	}
 	return false;
+}
+
+export function getCurrentMdFileRelativePath(app: App, removeSuffix = true) {
+	const activeFile = app.workspace.getActiveFile();
+	if (!activeFile) {
+		return '';
+	}
+	if (removeSuffix) {
+		return activeFile.path.replace(/.md$/, '')
+	} else {
+		return activeFile.path
+	}
 }
 
 export function copyFileSyncRecursive(src: string, dest: string, isCopyDir = false, regexText = '') {
@@ -35,7 +35,6 @@ export function copyFileSyncRecursive(src: string, dest: string, isCopyDir = fal
 		}
 	} else {
 		if (mathPrefix(src, regexText)) {
-			//console.log('忽略拷贝，' + src)
 			return
 		}
 		if (isCopyDir) {
@@ -66,6 +65,5 @@ export function deleteFilesInDirectorySync(directory: string) {
 		} else {
 			fs.unlinkSync(filePath);
 		}
-		console.log(`${filePath} deleted`);
 	});
 }

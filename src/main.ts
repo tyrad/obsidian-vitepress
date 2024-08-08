@@ -32,7 +32,9 @@ export default class ObsidianPlugin extends Plugin {
 
 		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
 
-		this.reloadRibbonIcon()
+		this.previewRibbonIconEl = this.addRibbonIcon(ICON_NAME, 'start vitepress', (evt: MouseEvent) => {
+			this.vitePressCmd.previewOrClose(this.previewRibbonIconEl)
+		});
 
 		this.addCommand({
 			id: 'vitepress-build',
@@ -80,12 +82,6 @@ export default class ObsidianPlugin extends Plugin {
 		this.app.workspace.on("layout-change", () => {
 			this.handleViewActionButton(true);
 		})
-	}
-
-	reloadRibbonIcon() {
-		this.previewRibbonIconEl = this.addRibbonIcon(ICON_NAME, 'start vitepress', (evt: MouseEvent) => {
-			this.vitePressCmd.previewOrClose(this.previewRibbonIconEl)
-		});
 	}
 
 	private handleViewActionButton(needAddIcon: boolean) {

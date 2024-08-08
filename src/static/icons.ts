@@ -37,7 +37,3 @@ export const ICON_SVG_PREVIEW = `
 </g>
 </svg>
 `
-
-// static readonly ICON_NAME = "obsidian-preview";
-// static readonly ICON_SVG_PREVIEW = `<circle cx="50" cy="50" r="50" fill="red" />`;
-// static readonly ICON_SVG_CLOSE = `<circle cx="50" cy="50" r="50" fill="black" />`
