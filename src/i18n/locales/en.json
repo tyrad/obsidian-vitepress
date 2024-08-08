@@ -28,6 +28,6 @@
 	"file-not-existed-check": "{{name}} does not exist, please check the settings",
 	"auto-sync-md": "Auto sync file",
 	"auto-sync-md-desc": "Enable or disable automatic syncing of files(.md) to Vitepress srcDir when running vitepress dev.",
-	"解析dataview": "Parsing \"dataview\"",
-	"是否需要处理dataview代码块(需要已经安装dataview插件)": "Parsing the `dataview` code blocks (assuming the `dataview` plugin is already installed) "
+	"parser-dataview": "Parsing \"dataview\"",
+	"parser-dataview-desc": "Parsing the `dataview` code blocks (assuming the `dataview` plugin is already installed) "
 }

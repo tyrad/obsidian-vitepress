@@ -173,8 +173,8 @@ export class SettingTab extends PluginSettingTab {
 					})
 			})
 		new Setting(containerEl)
-			.setName(i18next.t("解析dataview"))
-			.setDesc(i18next.t('是否需要处理dataview代码块(需要已经安装dataview插件)'))
+			.setName(i18next.t("parser-dataview"))
+			.setDesc(i18next.t('parser-dataview-desc'))
 			.addToggle((toggle) => {
 				toggle
 					.setValue(this.plugin.settings.useDataView)
