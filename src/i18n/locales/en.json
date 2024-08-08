@@ -25,5 +25,7 @@
 	"plugin-action-tip-public-move-to-src-dir": "Move the published content to the srcDir directory",
 	"enter-regex": "Please enter a regular expression",
 	"guide-to-setting": "The {{name}} is not set, click here to set",
-	"file-not-existed-check": "{{name}} does not exist, please check the settings"
+	"file-not-existed-check": "{{name}} does not exist, please check the settings",
+	"auto-sync-md": "Auto sync file",
+	"auto-sync-md-desc": "Enable or disable automatic syncing of files(.md) to Vitepress srcDir when running vitepress dev."
 }

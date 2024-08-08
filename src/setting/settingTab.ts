@@ -12,7 +12,8 @@ export interface VitepressPluginSettings {
 	vitepressSrcDir: string;
 	vitepressStaticDir: string;
 	deployScriptPath: string;
-	ignoreFileRegex: string
+	ignoreFileRegex: string;
+	autoSyncMdFile: boolean;
 }
 
 export const DEFAULT_SETTINGS: VitepressPluginSettings = {
@@ -23,6 +24,7 @@ export const DEFAULT_SETTINGS: VitepressPluginSettings = {
 	vitepressStaticDir: '',
 	deployScriptPath: '',
 	ignoreFileRegex: '^_',
+	autoSyncMdFile: true
 }
 
 export class SettingTab extends PluginSettingTab {
@@ -112,65 +114,62 @@ export class SettingTab extends PluginSettingTab {
 			})
 			.setClass('obsidian-setting-required');
 
+		new Setting(this.containerEl).setName(i18next.t("adv-settings")).setHeading();
 
 		new Setting(containerEl)
-			.setName(i18next.t('adv-settings'))
-			.addExtraButton((cb) => {
-				// 内置icon见： https://lucide.dev/icons/
-				cb.setIcon(!this.showFolderAdvanceButton ? "up-chevron-glyph" : 'down-chevron-glyph')
-					.onClick(() => {
-						this.showFolderAdvanceButton = !this.showFolderAdvanceButton;
-						this.display();
+			.setName(i18next.t("clean-src-dir"))
+			.setDesc(i18next.t('clean-src-dir-desc'))
+			.addToggle((toggle) => {
+				toggle
+					.setValue(this.plugin.settings.needCleanDirFolder)
+					.onChange(async (needCleanDirFolder) => {
+						this.plugin.settings.needCleanDirFolder = needCleanDirFolder;
+						await this.plugin.saveData(this.plugin.settings);
+						this.updateWarningText();
 					});
 			})
-		if (this.showFolderAdvanceButton) {
 
-			new Setting(containerEl)
-				.setName(i18next.t("clean-src-dir"))
-				.setDesc(i18next.t('clean-src-dir-desc'))
-				.addToggle((toggle) => {
-					toggle
-						.setValue(this.plugin.settings.needCleanDirFolder)
-						.onChange(async (needCleanDirFolder) => {
-							this.plugin.settings.needCleanDirFolder = needCleanDirFolder;
-							await this.plugin.saveData(this.plugin.settings);
-							this.updateWarningText();
-						});
-				})
-				.setClass('vitepress-setting-sub')
+		new Setting(containerEl)
+			.setName(i18next.t("vitepress-fixed-dir"))
+			.setDesc(i18next.t('vitepress-fixed-dir-desc'))
+			.addText(text => {
+				text.inputEl.classList.add('vitepress-setting-max-width')
+				return text
+					.setPlaceholder('')
+					.setValue(this.plugin.settings.vitepressStaticDir)
+					.onChange(async (value) => {
+						this.plugin.settings.vitepressStaticDir = value;
+						await this.plugin.saveData(this.plugin.settings);
+						this.updateWarningText();
+					});
+			})
 
-			new Setting(containerEl)
-				.setName(i18next.t("vitepress-fixed-dir"))
-				.setDesc(i18next.t('vitepress-fixed-dir-desc'))
-				.addText(text => {
-					text.inputEl.classList.add('vitepress-setting-max-width')
-					return text
-						.setPlaceholder('')
-						.setValue(this.plugin.settings.vitepressStaticDir)
-						.onChange(async (value) => {
-							this.plugin.settings.vitepressStaticDir = value;
-							await this.plugin.saveData(this.plugin.settings);
-							this.updateWarningText();
-						});
-				})
-				.setClass('vitepress-setting-sub')
+		new Setting(containerEl)
+			.setName(i18next.t("filter-doc"))
+			.setDesc(i18next.t('filter-doc-desc'))
+			.addText(text => {
+				text.inputEl.classList.add('vitepress-setting-max-width')
+				return text
+					.setPlaceholder(i18next.t('enter-regex'))
+					.setValue(this.plugin.settings.ignoreFileRegex)
+					.onChange(async (value) => {
+						this.plugin.settings.ignoreFileRegex = value;
+						await this.plugin.saveData(this.plugin.settings);
+						this.updateWarningText();
+					})
+			})
 
-			new Setting(containerEl)
-				.setName(i18next.t("filter-doc"))
-				.setDesc(i18next.t('filter-doc-desc'))
-				.addText(text => {
-					text.inputEl.classList.add('vitepress-setting-max-width')
-					return text
-						.setPlaceholder(i18next.t('enter-regex'))
-						.setValue(this.plugin.settings.ignoreFileRegex)
-						.onChange(async (value) => {
-							this.plugin.settings.ignoreFileRegex = value;
-							await this.plugin.saveData(this.plugin.settings);
-							this.updateWarningText();
-						})
-				})
-				.setClass('vitepress-setting-sub');
-		}
+		new Setting(containerEl)
+			.setName(i18next.t('auto-sync-md'))
+			.setDesc(i18next.t('auto-sync-md-desc'))
+			.addToggle(toggle => {
+				return toggle
+					.setValue(this.plugin.settings.autoSyncMdFile)
+					.onChange(async (value) => {
+						this.plugin.settings.autoSyncMdFile = value;
+						await this.plugin.saveData(this.plugin.settings);
+					})
+			})
 	}
 
 	updateWarningText() {

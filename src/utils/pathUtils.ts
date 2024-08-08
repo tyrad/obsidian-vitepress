@@ -67,3 +67,15 @@ export function deleteFilesInDirectorySync(directory: string) {
 		}
 	});
 }
+
+export function deleteFileOrFolder(path: string) {
+	if (!fs.existsSync(path)) {
+		return
+	}
+	const stats = fs.statSync(path);
+	if (stats.isDirectory()) {
+		removeFolder(path)
+	} else {
+		fs.unlinkSync(path);
+	}
+}

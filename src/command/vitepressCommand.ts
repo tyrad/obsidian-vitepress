@@ -1,6 +1,11 @@
 import * as child_process from 'child_process';
 import {App, Notice, setIcon, Platform} from "obsidian";
-import {copyFileSyncRecursive, deleteFilesInDirectorySync, getCurrentMdFileRelativePath} from "../utils/pathUtils";
+import {
+	copyFileSyncRecursive,
+	deleteFileOrFolder,
+	deleteFilesInDirectorySync,
+	getCurrentMdFileRelativePath
+} from "../utils/pathUtils";
 import {ConsoleModal, ConsoleType} from "../modal/consoleModal";
 import {ICON_NAME, ICON_NAME_ON_PREVIEW} from "../static/icons";
 import * as fs from "fs";
@@ -8,6 +13,8 @@ import ObsidianPlugin from "../main";
 import open from 'open';
 import stripAnsi from 'strip-ansi';
 import i18next from "i18next";
+import {FSWatcher} from "fs";
+import * as path from "node:path";
 
 export class VitepressCommand {
 	kill = require('tree-kill');
@@ -20,7 +27,7 @@ export class VitepressCommand {
 	private readonly isWindowsPlatform = Platform.isWin
 	private previewChildProcess: child_process.ChildProcessWithoutNullStreams | null = null
 	private isRunning: undefined | boolean = undefined;
-
+	private fsWatcher: null | FSWatcher = null
 	consoleModal: ConsoleModal;
 
 	getVitepressFolder() {
@@ -38,6 +45,7 @@ export class VitepressCommand {
 			if (this.previewChildProcess?.pid) {
 				this.kill(this.previewChildProcess.pid)
 			}
+			this.fsWatcher?.close();
 		});
 	}
 
@@ -104,7 +112,9 @@ export class VitepressCommand {
 	previewOrClose(previewRibbonIconEl: HTMLElement | null) {
 		try {
 			if (this.devChildProcess == null) {
-				this.startPreview();
+				this.startPreview(true, () => {
+					this.startFileWatcher()
+				});
 				previewRibbonIconEl?.setAttr('aria-label', 'Close:vitepress dev');
 			} else {
 				this.closeDev();
@@ -120,6 +130,7 @@ export class VitepressCommand {
 	closeDev() {
 		if (this.devChildProcess?.pid) {
 			this.kill(this.devChildProcess.pid)
+			this.fsWatcher?.close();
 		}
 		this.updateState(false);
 	}
@@ -134,29 +145,47 @@ export class VitepressCommand {
 		if (!this.checkSetting()) {
 			return
 		}
-		const copyFileTask = () => {
-			// @ts-ignore.
-			const basePath = this.app.vault.adapter.basePath;
-			const relativeFile = getCurrentMdFileRelativePath(this.app, false)
-			if (relativeFile) {
-				const fullFilePath = `${basePath}/${relativeFile}`
-				const copyTo = `${this.plugin.settings.vitepressSrcDir}/${relativeFile}`;
-				try {
-					copyFileSyncRecursive(fullFilePath, copyTo)
-				} catch (err) {
-					new Notice('file copy failed' + err);
-				}
-			}
-		}
 		if (this.isRunning) {
-			copyFileTask()
+			this.copyToVitepressSrc(getCurrentMdFileRelativePath(this.app, false))
 			this.openBrowserByUrl(this.startedVitepressHostAddress + '/' + getCurrentMdFileRelativePath(this.app))
 		} else {
-			this.startPreview(() => {
-				copyFileTask()
+			this.startPreview(false, () => {
+				this.copyToVitepressSrc(getCurrentMdFileRelativePath(this.app, false))
 				this.openBrowserByUrl(this.startedVitepressHostAddress + '/' + getCurrentMdFileRelativePath(this.app))
+				this.startFileWatcher()
 			});
 		}
+	}
+
+	private startFileWatcher() {
+		if (!this.plugin.settings.autoSyncMdFile) {
+			return
+		}
+		// @ts-ignore
+		const workspace = this.app.vault.adapter.basePath;
+		this.fsWatcher?.close();
+		this.fsWatcher = fs.watch(workspace,
+			{recursive: true},
+			(_, filename) => {
+				if (!filename) {
+					return
+				}
+				const obFilePath = `${workspace}${path.sep}${filename}`
+				const obFileExisted = fs.existsSync(obFilePath)
+				const copyTo = `${this.plugin.settings.vitepressSrcDir}${path.sep}${filename}`;
+				if (obFileExisted) {
+					deleteFileOrFolder(copyTo);
+					return
+				}
+				const stats = fs.statSync(obFilePath);
+				if (stats.isDirectory()) {
+					this.copyToVitepressSrc(filename, true);
+				} else {
+					if (/\.md$/.test(filename)) {
+						this.copyToVitepressSrc(filename);
+					}
+				}
+			})
 	}
 
 	private openBrowserByUrl(url: string) {
@@ -202,6 +231,50 @@ export class VitepressCommand {
 		return true
 	}
 
+	startPreview(openBrowserOnStart: boolean, finish: (() => void) | null = null): void {
+		if (!this.checkSetting()) {
+			return
+		}
+		this.consoleModal.open();
+		const actionName = '[vitepress]:'
+		this.consoleModal.appendLogResult(`${actionName} starting...`)
+		// 默认第一次启动的时候为打开主页。 并且第一次启动的时候，将docs的内容复制到knowledge文件夹
+		if (!this.docsPrepare()) {
+			return
+		}
+		this.devChildProcess = child_process.spawn(`npm`, ['run', 'docs:dev'], this.getSpawnOptions());
+		this.devChildProcess.stdout.on('data', (data) => {
+			data = this.stripAnsiText(data)
+			this.consoleModal.appendLogResult(data)
+			const address = this.extractAddress(data.toString())
+			if (address && !this.startedVitepressHostAddress) {
+				this.startedVitepressHostAddress = address;
+				if (openBrowserOnStart) {
+					this.openBrowserByUrl(this.startedVitepressHostAddress)
+				}
+				finish && finish();
+			}
+			this.updateState(true)
+		});
+		this.devChildProcess.stderr.on('data', (data) => {
+			data = this.stripAnsiText(data)
+			this.consoleModal.appendLogResult(data, ConsoleType.Warning)
+		});
+		this.devChildProcess.on('close', (code) => {
+			const tips = `${actionName} closed ${code ?? ''}`
+			this.consoleModal.appendLogResult(tips)
+			new Notice(tips);
+			this.updateState(false)
+		});
+		this.devChildProcess.on('error', (err) => {
+			const tips = `${actionName}Failed to start child process: ` + err
+			this.consoleModal.appendLogResult(tips, ConsoleType.Error)
+			console.error(tips)
+			new Notice(tips);
+			this.updateState(false);
+		});
+	}
+
 	private docsPrepare() {
 		const actionName = '[docsPrepare]:'
 		const vitepressSrcDir = this.plugin.settings.vitepressSrcDir;
@@ -242,52 +315,6 @@ export class VitepressCommand {
 			}
 		}
 		return true;
-	}
-
-
-	startPreview(finish: (() => void) | null = null): void {
-		if (!this.checkSetting()) {
-			return
-		}
-		this.consoleModal.open();
-		const actionName = '[vitepress]:'
-		this.consoleModal.appendLogResult(`${actionName} starting...`)
-		// 默认第一次启动的时候为打开主页。 并且第一次启动的时候，将docs的内容复制到knowledge文件夹
-		if (!this.docsPrepare()) {
-			return
-		}
-		this.devChildProcess = child_process.spawn(`npm`, ['run', 'docs:dev'], this.getSpawnOptions());
-		this.devChildProcess.stdout.on('data', (data) => {
-			data = this.stripAnsiText(data)
-			this.consoleModal.appendLogResult(data)
-			const address = this.extractAddress(data.toString())
-			if (address && !this.startedVitepressHostAddress) {
-				this.startedVitepressHostAddress = address;
-				if (!finish) {
-					this.openBrowserByUrl(this.startedVitepressHostAddress)
-				} else {
-					finish();
-				}
-			}
-			this.updateState(true)
-		});
-		this.devChildProcess.stderr.on('data', (data) => {
-			data = this.stripAnsiText(data)
-			this.consoleModal.appendLogResult(data, ConsoleType.Warning)
-		});
-		this.devChildProcess.on('close', (code) => {
-			const tips = `${actionName} closed ${code ?? ''}`
-			this.consoleModal.appendLogResult(tips)
-			new Notice(tips);
-			this.updateState(false)
-		});
-		this.devChildProcess.on('error', (err) => {
-			const tips = `${actionName}Failed to start child process: ` + err
-			this.consoleModal.appendLogResult(tips, ConsoleType.Error)
-			console.error(tips)
-			new Notice(tips);
-			this.updateState(false);
-		});
 	}
 
 	private commonCommandOnRunning(actionName: string, process: child_process.ChildProcessWithoutNullStreams, onDataCallback: ((data: string) => (void)) | null = null) {
@@ -340,6 +367,20 @@ export class VitepressCommand {
 			this.startedVitepressHostAddress = '';
 			if (this.plugin.previewRibbonIconEl) {
 				setIcon(this.plugin.previewRibbonIconEl, ICON_NAME);
+			}
+		}
+	}
+
+	private copyToVitepressSrc(relativeFile: string, isCopyDir = false) {
+		// @ts-ignore.
+		const basePath = this.app.vault.adapter.basePath;
+		if (relativeFile) {
+			const fullFilePath = `${basePath}${path.sep}${relativeFile}`
+			const copyTo = `${this.plugin.settings.vitepressSrcDir}${path.sep}${relativeFile}`;
+			try {
+				copyFileSyncRecursive(fullFilePath, copyTo, isCopyDir)
+			} catch (err) {
+				new Notice('file copy failed' + err);
 			}
 		}
 	}

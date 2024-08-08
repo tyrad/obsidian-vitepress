@@ -24,5 +24,7 @@
 	"plugin-action-tip-public-move-to-src-dir": "将发布内容移动到srcDir目录",
 	"enter-regex": "请输入正则表达式",
 	"guide-to-setting": "未设置{{name}}路径,点击设置",
-	"file-not-existed-check": "{{name}}文件不存在，请检查设置"
+	"file-not-existed-check": "{{name}}文件不存在，请检查设置",
+	"auto-sync-md": "自动同步文件",
+	"auto-sync-md-desc": "当运行vitepress dev时,是否自动同步.md文件到Vitepress srcDir"
 }
