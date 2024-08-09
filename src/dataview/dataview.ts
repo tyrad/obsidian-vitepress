@@ -78,7 +78,10 @@ export class DataviewActions {
 							const query = match.groups?.query?.trim() ?? "";
 							if (language === 'dataview') {
 								haveDataviewBlock = true
-								const result = await this.dataViewApi.tryQueryMarkdown(query);
+								// @ts-ignore
+								const workspace = this.app.vault.adapter.basePath;
+								const srcRelativePath = src.replace(new RegExp("^" + workspace + "/"), "")
+								const result = await this.dataViewApi.tryQueryMarkdown(query, srcRelativePath);
 								data = data.replace(match[0], result)
 							}
 						}
