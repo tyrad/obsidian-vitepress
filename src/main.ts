@@ -10,13 +10,11 @@ export default class ObsidianPlugin extends Plugin {
 	previewRibbonIconEl: HTMLElement | null = null
 
 	vitePressCmd: VitepressCommand
-	settingTab: SettingTab
 	settings: VitepressPluginSettings;
 
 	constructor(app: App, manifest: PluginManifest) {
 		super(app, manifest);
 		this.vitePressCmd = new VitepressCommand(app, this);
-		this.settingTab = new SettingTab(this.app, this)
 	}
 
 	async onload() {
@@ -76,7 +74,7 @@ export default class ObsidianPlugin extends Plugin {
 			}
 		});
 
-		this.addSettingTab(this.settingTab);
+		this.addSettingTab(new SettingTab(this.app, this));
 
 		this.handleViewActionButton(true);
 		this.app.workspace.on("layout-change", () => {
@@ -87,17 +85,26 @@ export default class ObsidianPlugin extends Plugin {
 	private handleViewActionButton(needAddIcon: boolean) {
 		activeWindow.requestAnimationFrame(() =>
 			this.app.workspace.iterateAllLeaves((leaf) => {
-					const activeLeaf = leaf?.view.containerEl;
-					const viewAction = activeLeaf?.getElementsByClassName('view-actions')[0];
+					const leafViewEl = leaf?.view.containerEl;
+					const viewAction = leafViewEl?.getElementsByClassName('view-actions')[0];
 					if (!viewAction) {
 						return
 					}
 					const buttonClass = 'vitepress-view-action-preview-file'
 					const existedButtons = viewAction.getElementsByClassName(buttonClass)
-					for (const button of Array.from(existedButtons)) {
-						button.detach();
-					}
+					// 不需要按钮的时候全部移除掉
 					if (!needAddIcon) {
+						for (const button of Array.from(existedButtons)) {
+							button.detach();
+						}
+						return
+					}
+					// 如果重复添加的按钮，删除多余的，并退出。不再创建
+					if (existedButtons.length > 0) {
+						const [, ...editionButton] = Array.from(existedButtons);
+						for (const button of editionButton) {
+							button.detach();
+						}
 						return
 					}
 					const buttonIcon = createEl('a', {
@@ -108,9 +115,7 @@ export default class ObsidianPlugin extends Plugin {
 					viewAction.prepend(buttonIcon);
 					this.registerDomEvent(buttonIcon, 'mousedown', evt => {
 						if (evt.button === 0) {
-							setTimeout(() => {
-								this.vitePressCmd.openBrowser();
-							}, 5);
+							this.vitePressCmd.openBrowser();
 						}
 					})
 				}
