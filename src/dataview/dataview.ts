@@ -91,9 +91,8 @@ export class DataviewActions {
 							}
 							// 暂不支持dataviewjs dom相关的操作：例如`.paragraph`等。
 							if (language === 'dataviewjs' && this.plugin.settings.useDataViewJs) {
-								const result = eval(query);
-								// 仅在eval没抛出异常的时候进行error相关原文本
 								haveDataviewBlock = true;
+								const result = eval(query);
 								data = data.replace(match[0], result);
 							}
 						} catch (err) {
