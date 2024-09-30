@@ -9,6 +9,7 @@ export interface VitepressPluginSettings {
 	publishedContentList: PublishedContentType[];
 	needCleanDirFolder: boolean;
 	useDataView: boolean;
+	useDataViewJs: boolean,
 	vitepressDir: string;
 	vitepressSrcDir: string;
 	vitepressStaticDir: string;
@@ -21,6 +22,7 @@ export const DEFAULT_SETTINGS: VitepressPluginSettings = {
 	publishedContentList: [],
 	needCleanDirFolder: false,
 	useDataView: false,
+	useDataViewJs: false,
 	vitepressDir: '',
 	vitepressSrcDir: '',
 	vitepressStaticDir: '',
@@ -183,6 +185,18 @@ export class SettingTab extends PluginSettingTab {
 						await this.plugin.saveData(this.plugin.settings);
 					});
 			})
+
+		new Setting(containerEl)
+			.setName(i18next.t("parser-dataviewjs"))
+			.setDesc(i18next.t('parser-dataviewjsdesc'))
+			.addToggle((toggle) => {
+				toggle
+					.setValue(this.plugin.settings.useDataViewJs)
+					.onChange(async (useDataView) => {
+						this.plugin.settings.useDataViewJs = useDataView;
+						await this.plugin.saveData(this.plugin.settings);
+					});
+			})
 	}
 
 	updateWarningText() {
@@ -219,7 +233,7 @@ ${this.plugin.settings.needCleanDirFolder ? `- ${i18next.t('plugin-action-tip-cl
 			}
 			const folderList: { name: string, isDir: boolean }[] = []
 			files.forEach(file => {
-				if (file.name != '.DS_Store' && file.name != this.app.vault.configDir) {
+				if (file.name != '.DS_Store' && file.name !== '.trash' && file.name != this.app.vault.configDir) {
 					folderList.push({
 						name: file.name,
 						isDir: file.isDirectory()

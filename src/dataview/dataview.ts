@@ -8,7 +8,7 @@ import {readdirSync} from "fs";
 import ObsidianPlugin from "../main";
 
 export class DataviewActions {
-	private readonly dataViewApi: DataviewApi;
+	private dataViewApi: DataviewApi;
 	private readonly app: App
 	private readonly plugin: ObsidianPlugin;
 
@@ -63,39 +63,51 @@ export class DataviewActions {
 	}
 
 	async copyFileSync(src: string, dest: string) {
-		if (this.plugin.settings.useDataView && this.dataViewApi) {
-			try {
-				let data = fs.readFileSync(src, 'utf8');
-				const CODEBLOCK = /```(?<language>.+)?\n(?<query>[\s\S]*?)```/gm;
-				const CODEBLOCK_REGEX = /```(?<language>.+)?\n(?<query>[\s\S]*?)```/m;
-				const match = data.match(CODEBLOCK);
-				if (match) {
-					let haveDataviewBlock = false;
-					for (const mmText of match) {
-						const match = mmText.match(CODEBLOCK_REGEX);
-						if (match && match.length) {
-							const language = match.groups?.language?.trim() ?? "";
-							const query = match.groups?.query?.trim() ?? "";
-							if (language === 'dataview') {
+		if (this.dataViewApi) {
+			this.dataViewApi = getAPI(this.app);
+		}
+		const dv = this.dataViewApi;
+		if ((this.plugin.settings.useDataView || this.plugin.settings.useDataViewJs) && dv) {
+			// 这部分代码参考了： https://github.com/udus122/dataview-publisher
+			let data = fs.readFileSync(src, 'utf8');
+			const CODEBLOCK = /```(?<language>.+)?\n(?<query>[\s\S]*?)```/gm;
+			const CODEBLOCK_REGEX = /```(?<language>.+)?\n(?<query>[\s\S]*?)```/m;
+			const match = data.match(CODEBLOCK);
+			if (match) {
+				let haveDataviewBlock = false;
+				for (const mmText of match) {
+					const match = mmText.match(CODEBLOCK_REGEX);
+					if (match && match.length) {
+						const language = match.groups?.language?.trim() ?? "";
+						const query = match.groups?.query?.trim() ?? "";
+						try {
+							// @ts-ignore
+							const workspace = this.app.vault.adapter.basePath;
+							const srcRelativePath = src.replace(new RegExp("^" + workspace + "/"), "")
+							if (language === 'dataview' && this.plugin.settings.useDataView) {
 								haveDataviewBlock = true
-								// @ts-ignore
-								const workspace = this.app.vault.adapter.basePath;
-								const srcRelativePath = src.replace(new RegExp("^" + workspace + "/"), "")
-								const result = await this.dataViewApi.tryQueryMarkdown(query, srcRelativePath);
+								const result = await dv.tryQueryMarkdown(query, srcRelativePath);
 								data = data.replace(match[0], result)
 							}
+							// 暂不支持dataviewjs dom相关的操作：例如`.paragraph`等。
+							if (language === 'dataviewjs' && this.plugin.settings.useDataViewJs) {
+								const result = eval(query);
+								// 仅在eval没抛出异常的时候进行error相关原文本
+								haveDataviewBlock = true;
+								data = data.replace(match[0], result);
+							}
+						} catch (err) {
+							console.error(err);
+							data = data.replace(match[0], `\`\`\`\nDataview:${err.message}\n\`\`\``);
 						}
 					}
-					if (haveDataviewBlock) {
-						fs.writeFileSync(dest, data, {encoding: 'utf8'});
-						return
-					}
 				}
-				fs.copyFileSync(src, dest)
-			} catch (err) {
-				console.error(err); // err.message
-				fs.writeFileSync(dest, `\`\`\`\nDataview:${err.message}\n\`\`\``, {encoding: 'utf8'});
+				if (haveDataviewBlock) {
+					fs.writeFileSync(dest, data, {encoding: 'utf8'});
+					return
+				}
 			}
+			fs.copyFileSync(src, dest)
 		} else {
 			fs.copyFileSync(src, dest)
 		}

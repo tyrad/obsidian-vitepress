@@ -29,5 +29,7 @@
 	"auto-sync-md": "Auto sync file",
 	"auto-sync-md-desc": "Enable or disable automatic syncing of files(.md) to Vitepress srcDir when running vitepress dev.",
 	"parser-dataview": "Parsing \"dataview\"",
-	"parser-dataview-desc": "Parsing the `dataview` code blocks (assuming the `dataview` plugin is already installed) "
+	"parser-dataview-desc": "Parsing the `dataview` code blocks (assuming the `dataview` plugin is already installed) ",
+	"parser-dataviewjs": "Parsing dataviewjs (experimental feature)",
+	"parser-dataviewjsdesc": "Parsing the `dataviewjs` code blocks (assuming the `dataview` plugin is already installed), does not support dataviewjs related DOM operations, such as dv.span/dv.span/dv.paragraph, and so on."
 }
