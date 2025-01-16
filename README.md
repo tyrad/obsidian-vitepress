@@ -4,6 +4,10 @@ Obsidian Vitepress Plugin is a tool that allows you to easily preview and compil
 
 ## Installation
 
+### Community plugin Store
+
+This Plugin can be installed through the community plugin browser in Obsidian.
+
 ### Manual Installation
 
 Download `main.js`, `manifest.json`, and `styles.css` from the [release](https://github.com/tyrad/obsidian-vitepress/releases) page and place them in `<vault>/.obsidian/plugins/obsidian-vitepress` directory.
