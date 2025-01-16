@@ -4,6 +4,11 @@
 
 ## 如何安装
 
+
+### 从社区商店安装
+
+Obsidian Vitepress Plugin 支持从社区插件商店下载。
+
 ### 手动安装
 
 从 [release](https://github.com/tyrad/obsidian-vitepress/releases) 页面下载 `main.js`, `manifest.json`, `styles.css` ，并将其放到 `<vault>/.obsidian/plugins/obsidian-vitepress` 目录下。
