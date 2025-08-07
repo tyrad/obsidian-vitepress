@@ -16,6 +16,11 @@ export interface VitepressPluginSettings {
 	deployScriptPath: string;
 	ignoreFileRegex: string;
 	autoSyncMdFile: boolean;
+	// 新增可配置的命令字段
+	devCommand?: string;     // 开发服务器命令
+	buildCommand?: string;   // 构建命令  
+	previewCommand?: string; // 预览命令
+	enableCustomCommands?: boolean; // 是否启用命令自定义（控制UI显示）
 }
 
 export const DEFAULT_SETTINGS: VitepressPluginSettings = {
@@ -28,7 +33,12 @@ export const DEFAULT_SETTINGS: VitepressPluginSettings = {
 	vitepressStaticDir: '',
 	deployScriptPath: '',
 	ignoreFileRegex: '^_',
-	autoSyncMdFile: true
+	autoSyncMdFile: true,
+	// 新增命令的默认值（与当前硬编码逻辑一致）
+	devCommand: 'npm run docs:dev',      // 保持当前默认行为
+	buildCommand: 'npm run docs:build',  // 保持当前默认行为
+	previewCommand: 'npm run docs:preview', // 保持当前默认行为
+	enableCustomCommands: false         // 默认不显示自定义命令UI
 }
 
 export class SettingTab extends PluginSettingTab {
@@ -45,6 +55,7 @@ export class SettingTab extends PluginSettingTab {
 		const {containerEl} = this;
 		containerEl.empty();
 		this.configBasicSetting();
+		this.configCommandSettings();
 		this.publishSetting();
 		this.updateWarningText();
 	}
@@ -282,5 +293,66 @@ ${this.plugin.settings.needCleanDirFolder ? `- ${i18next.t('plugin-action-tip-cl
 			this.plugin.settings.publishedContentList.push(...selectedList);
 			await this.plugin.saveData(this.plugin.settings);
 		});
+	}
+
+	private configCommandSettings() {
+		const {containerEl} = this;
+		
+		new Setting(containerEl)
+			.setName(i18next.t('command-configuration'))
+			.setDesc(i18next.t('command-configuration-desc'))
+			.addToggle(toggle => toggle
+				.setValue(this.plugin.settings.enableCustomCommands || false)
+				.onChange(async (value) => {
+					this.plugin.settings.enableCustomCommands = value;
+					await this.plugin.saveData(this.plugin.settings);
+					this.display();
+				}));
+
+		// 只有启用时才显示命令配置
+		if (this.plugin.settings.enableCustomCommands) {
+			new Setting(containerEl).setName(i18next.t('vitepress-commands')).setHeading();
+			
+			// 添加说明文本
+			new Setting(containerEl)
+				.setName('')
+				.setDesc(i18next.t('command-support-desc'));
+			
+			// 开发服务器命令配置
+			new Setting(containerEl)
+				.setName(i18next.t('dev-command'))
+				.setDesc(i18next.t('dev-command-desc'))
+				.addText(text => text
+					.setPlaceholder('npm run docs:dev')
+					.setValue(this.plugin.settings.devCommand || 'npm run docs:dev')
+					.onChange(async (value) => {
+						this.plugin.settings.devCommand = value || 'npm run docs:dev';
+						await this.plugin.saveData(this.plugin.settings);
+					}));
+
+			// 构建命令配置
+			new Setting(containerEl)
+				.setName(i18next.t('build-command'))
+				.setDesc(i18next.t('build-command-desc'))
+				.addText(text => text
+					.setPlaceholder('npm run docs:build')
+					.setValue(this.plugin.settings.buildCommand || 'npm run docs:build')
+					.onChange(async (value) => {
+						this.plugin.settings.buildCommand = value || 'npm run docs:build';
+						await this.plugin.saveData(this.plugin.settings);
+					}));
+
+			// 预览命令配置
+			new Setting(containerEl)
+				.setName(i18next.t('preview-command'))
+				.setDesc(i18next.t('preview-command-desc'))
+				.addText(text => text
+					.setPlaceholder('npm run docs:preview')
+					.setValue(this.plugin.settings.previewCommand || 'npm run docs:preview')
+					.onChange(async (value) => {
+						this.plugin.settings.previewCommand = value || 'npm run docs:preview';
+						await this.plugin.saveData(this.plugin.settings);
+					}));
+		}
 	}
 }

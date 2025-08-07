@@ -60,7 +60,8 @@ export class VitepressCommand {
 		if (this.previewChildProcess?.pid) {
 			this.kill(this.previewChildProcess.pid)
 		}
-		this.previewChildProcess = child_process.spawn(`npm`, ['run', 'docs:preview'], this.getSpawnOptions());
+		const { command: previewCommand, args: previewArgs } = this.getConfiguredCommand('preview');
+		this.previewChildProcess = child_process.spawn(previewCommand, previewArgs, this.getSpawnOptions());
 		this.commonCommandOnRunning('[vitepress preview]', this.previewChildProcess, data => {
 			const address = this.extractAddress(data.toString(), false)
 			if (address) {
@@ -108,7 +109,8 @@ export class VitepressCommand {
 			return
 		}
 		this.consoleModal.open();
-		const childProcess = child_process.spawn(`npm`, ['run', 'docs:build'], this.getSpawnOptions());
+		const { command: buildCommand, args: buildArgs } = this.getConfiguredCommand('build');
+		const childProcess = child_process.spawn(buildCommand, buildArgs, this.getSpawnOptions());
 		this.commonCommandOnRunning('[vitepress build]:', childProcess)
 	}
 
@@ -247,7 +249,8 @@ export class VitepressCommand {
 		if (!this.docsPrepare()) {
 			return
 		}
-		this.devChildProcess = child_process.spawn(`npm`, ['run', 'docs:dev'], this.getSpawnOptions());
+		const { command: devCommand, args: devArgs } = this.getConfiguredCommand('dev');
+		this.devChildProcess = child_process.spawn(devCommand, devArgs, this.getSpawnOptions());
 		this.devChildProcess.stdout.on('data', (data) => {
 			data = this.stripAnsiText(data)
 			this.consoleModal.appendLogResult(data)
@@ -379,6 +382,13 @@ export class VitepressCommand {
 	private async copyToVitepressSrc(relativeFile: string, isCopyDir = false) {
 		// @ts-ignore.
 		const basePath = this.app.vault.adapter.basePath;
+		
+		// 检查当前目录和需要同步的目录是否是同一个
+		if (path.resolve(basePath) === path.resolve(this.plugin.settings.vitepressSrcDir)) {
+			console.log('Source and destination directories are the same, skipping file copy operation');
+			return;
+		}
+		
 		if (relativeFile) {
 			const fullFilePath = `${basePath}${path.sep}${relativeFile}`
 			const copyTo = `${this.plugin.settings.vitepressSrcDir}${path.sep}${relativeFile}`;
@@ -398,5 +408,39 @@ export class VitepressCommand {
 			},
 			shell: this.isWindowsPlatform
 		}
+	}
+
+	/**
+	 * 解析命令字符串为command和args
+	 * 例如: "npm run docs:dev" -> { command: "npm", args: ["run", "docs:dev"] }
+	 */
+	private parseCommand(commandStr: string): { command: string, args: string[] } {
+		const parts = commandStr.trim().split(/\s+/);
+		return {
+			command: parts[0] || '',
+			args: parts.slice(1)
+		};
+	}
+
+	/**
+	 * 获取配置的命令（如果未配置则使用默认值）
+	 */
+	private getConfiguredCommand(type: 'dev' | 'build' | 'preview'): { command: string, args: string[] } {
+		const settings = this.plugin.settings;
+		let commandStr = '';
+		
+		switch (type) {
+			case 'dev':
+				commandStr = settings.devCommand || 'npm run docs:dev';
+				break;
+			case 'build':
+				commandStr = settings.buildCommand || 'npm run docs:build';
+				break;
+			case 'preview':
+				commandStr = settings.previewCommand || 'npm run docs:preview';
+				break;
+		}
+		
+		return this.parseCommand(commandStr);
 	}
 }

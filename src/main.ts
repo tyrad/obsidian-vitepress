@@ -36,7 +36,7 @@ export default class ObsidianPlugin extends Plugin {
 
 		this.addCommand({
 			id: 'vitepress-build',
-			name: 'vitepress build (npm run docs:build)',
+			name: 'VitePress Build (default: npm run docs:build, configurable)',
 			callback: () => {
 				this.vitePressCmd.build();
 			}
@@ -44,7 +44,7 @@ export default class ObsidianPlugin extends Plugin {
 
 		this.addCommand({
 			id: 'vitepress-preview',
-			name: 'vitepress preview (npm run docs:preview)',
+			name: 'VitePress Preview (default: npm run docs:preview, configurable)',
 			callback: () => {
 				this.vitePressCmd.preview();
 			}

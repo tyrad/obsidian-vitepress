@@ -23,6 +23,8 @@ data.json
 
 knowledge/*
 
+CLAUDE.md 
+
 .vitepress/cache
 
 !knowledge/.gitkeep
