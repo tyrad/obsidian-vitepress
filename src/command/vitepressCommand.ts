@@ -101,11 +101,11 @@ export class VitepressCommand {
 		});
 	}
 
-	build() {
+	async build() {
 		if (!this.checkSetting()) {
 			return
 		}
-		if (!this.docsPrepare()) {
+		if (!(await this.docsPrepare())) {
 			return
 		}
 		this.consoleModal.open();
@@ -119,6 +119,10 @@ export class VitepressCommand {
 			if (this.devChildProcess == null) {
 				this.startPreview(true, () => {
 					this.startFileWatcher()
+				}).catch(e => {
+					console.error(e);
+					this.consoleModal.appendLogResult('error!' + e, ConsoleType.Error);
+					new Notice('error!' + e);
 				});
 				previewRibbonIconEl?.setAttr('aria-label', 'Close:vitepress dev');
 			} else {
@@ -160,6 +164,10 @@ export class VitepressCommand {
 				await this.copyToVitepressSrc(getCurrentMdFileRelativePath(this.app, false))
 				this.openBrowserByUrl(this.startedVitepressHostAddress + '/' + getCurrentMdFileRelativePath(this.app))
 				this.startFileWatcher()
+			}).catch(e => {
+				console.error(e);
+				this.consoleModal.appendLogResult('error!' + e, ConsoleType.Error);
+				new Notice('error!' + e);
 			});
 		}
 	}
@@ -238,7 +246,7 @@ export class VitepressCommand {
 		return true
 	}
 
-	startPreview(openBrowserOnStart: boolean, finish: (() => void) | null = null): void {
+	async startPreview(openBrowserOnStart: boolean, finish: (() => void) | null = null): Promise<void> {
 		if (!this.checkSetting()) {
 			return
 		}
@@ -246,7 +254,7 @@ export class VitepressCommand {
 		const actionName = '[vitepress]:'
 		this.consoleModal.appendLogResult(`${actionName} starting...`)
 		// 默认第一次启动的时候为打开主页。 并且第一次启动的时候，将docs的内容复制到knowledge文件夹
-		if (!this.docsPrepare()) {
+		if (!(await this.docsPrepare())) {
 			return
 		}
 		const { command: devCommand, args: devArgs } = this.getConfiguredCommand('dev');
@@ -296,9 +304,9 @@ export class VitepressCommand {
 		const basePath = this.app.vault.adapter.basePath;
 		// 这里需要保证 vitepressSrcDir 和 obsidian目录不是一个
 		if (path.resolve(basePath) === path.resolve(vitepressSrcDir)) {
-			this.consoleModal.appendLogResult(`${actionName} Source and destination directories are the same, operation cancelled for safety.`)
-			new Notice('Vitepress source directory cannot be the same as Obsidian workspace directory')
-			return false;
+			this.consoleModal.appendLogResult(`${actionName} Source and destination directories are the same, operation cancelled for safety`, ConsoleType.Warning)
+			new Notice('Source and destination directories are the same, operation cancelled for safety')
+			return true;
 		}
 		
 		if (this.plugin.settings.needCleanDirFolder) {
