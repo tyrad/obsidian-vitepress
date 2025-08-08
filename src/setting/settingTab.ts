@@ -101,7 +101,7 @@ export class SettingTab extends PluginSettingTab {
 
 		new Setting(containerEl)
 			.setName(i18next.t("vitepress-folder-path"))
-			.setDesc(i18next.t('need-absolute-path'))
+			.setDesc(i18next.t('vitepress-folder-path-desc'))
 			.addText(text => {
 				text.inputEl.classList.add('vitepress-setting-max-width')
 				return text
@@ -116,7 +116,7 @@ export class SettingTab extends PluginSettingTab {
 
 		new Setting(containerEl)
 			.setName(i18next.t("vitepress-srcDir-path"))
-			.setDesc(i18next.t('need-absolute-path'))
+			.setDesc(i18next.t('vitepress-srcDir-path-desc'))
 			.addText(text => {
 				text.inputEl.classList.add('vitepress-setting-max-width')
 				return text

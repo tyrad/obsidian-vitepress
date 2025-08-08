@@ -291,13 +291,23 @@ export class VitepressCommand {
 			new Notice(i18next.t('vitepress-srcDir-path-not-set'))
 			return false;
 		}
-		const vitepressStaicDir = this.plugin.settings.vitepressStaticDir;
+		
+		// @ts-ignore
+		const basePath = this.app.vault.adapter.basePath;
+		// 这里需要保证 vitepressSrcDir 和 obsidian目录不是一个
+		if (path.resolve(basePath) === path.resolve(vitepressSrcDir)) {
+			this.consoleModal.appendLogResult(`${actionName} Source and destination directories are the same, operation cancelled for safety.`)
+			new Notice('Vitepress source directory cannot be the same as Obsidian workspace directory')
+			return false;
+		}
+		
 		if (this.plugin.settings.needCleanDirFolder) {
 			this.consoleModal.appendLogResult(`${actionName} remove folder '${vitepressSrcDir}'`)
 			if (fs.existsSync(vitepressSrcDir)) {
 				deleteFilesInDirectorySync(vitepressSrcDir)
 			}
 		}
+		const vitepressStaicDir = this.plugin.settings.vitepressStaticDir;
 		if (vitepressStaicDir) {
 			if (!fs.existsSync(vitepressStaicDir)) {
 				this.consoleModal.appendLogResult(`${actionName} '${vitepressStaicDir}' not exists, stopped.`)
