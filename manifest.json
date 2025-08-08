@@ -1,7 +1,7 @@
 {
 	"id": "vitepress-publisher",
 	"name": "Vitepress Publisher",
-	"version": "1.2.0",
+	"version": "1.3.0",
 	"minAppVersion": "0.15.0",
 	"description": "This is a plugin for more convenient preview and publishing of .md files using VitePress and other static site generators like Hugo",
 	"author": "mistj",
